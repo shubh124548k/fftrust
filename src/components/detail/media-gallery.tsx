@@ -215,7 +215,12 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
           </div>
           <div className="flex flex-col gap-4">
             {videos.map((v, i) => (
-              <SafeVideo key={`${v.url}-${i}`} url={v.url} title={title} poster={v.alt} />
+              <SafeVideo
+                key={`${v.url}-${i}`}
+                url={v.url}
+                title={title}
+                poster={hasImages ? images[0].url : v.alt}
+              />
             ))}
           </div>
         </div>

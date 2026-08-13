@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { validateVideoUrl } from "@/lib/validation";
+import { validateImageUrl, validateVideoUrl } from "@/lib/validation";
 import { getYouTubeId, getVimeoId } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +62,9 @@ export function SafeVideo({ url, title, className, poster, fill }: SafeVideoProp
 
   const youTubeId = getYouTubeId(validatedUrl);
   const vimeoId = getVimeoId(validatedUrl);
+  // Poster is only ever emitted for a real, validated image URL — a bogus
+  // `alt`/title string must never trigger a poster network request (404s).
+  const validatedPoster = validateImageUrl(poster);
 
   const containerClass = fill
     ? cn("absolute inset-0 h-full w-full overflow-hidden", className)
@@ -100,7 +103,7 @@ export function SafeVideo({ url, title, className, poster, fill }: SafeVideoProp
       ) : (
         <video
           src={validatedUrl}
-          poster={poster}
+          poster={validatedPoster ?? undefined}
           controls
           muted
           playsInline
