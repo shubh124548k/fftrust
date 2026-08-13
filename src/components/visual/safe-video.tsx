@@ -2,13 +2,20 @@
 
 import * as React from "react";
 import { validateVideoUrl } from "@/lib/validation";
+import { getYouTubeId, getVimeoId } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 /**
- * FF TRUST — Safe Video Component.
+ * FF TRUST — Canonical Video Component (single reusable video template).
  *
- * Renders video URLs from canonical data with allowlist-based safety:
- *  - YouTube URLs → sandboxed iframe embed
+ * THE one video renderer for the whole app. Every category (accounts, panel
+ * services, paid push, Instagram) plays its video through this component —
+ * the Details media viewer (media-gallery) and the card lightbox both consume
+ * it, so video behavior is defined exactly once.
+ *
+ * The URL is ALWAYS the canonical `videoUrl` from src/data (never a hardcoded
+ * URL in the UI). Rendering is decided by the URL itself:
+ *  - YouTube URLs → sandboxed iframe embed (youtube-nocookie)
  *  - Vimeo URLs → sandboxed iframe embed
  *  - Direct video files (.mp4, .webm, etc.) → <video> element
  *  - All other URLs → rejected (not rendered)
@@ -16,12 +23,13 @@ import { cn } from "@/lib/utils";
  * Security:
  *  - Never renders arbitrary iframe HTML
  *  - Uses sandbox attribute to restrict iframe capabilities
- *  - Validates URL scheme (http/https only)
+ *  - Validates URL scheme (http/https only, provider allowlist)
  *  - No JavaScript execution from untrusted sources
  *
  * Responsive:
- *  - 16:9 aspect ratio maintained
- *  - Max-height constraints for mobile
+ *  - Standalone: 16:9 aspect ratio with max-height constraints
+ *  - `fill`: fills the nearest positioned parent (used inside media stages,
+ *    e.g. the Details gallery stage or the lightbox player)
  *  - Lazy loading
  */
 
@@ -30,30 +38,12 @@ interface SafeVideoProps {
   title?: string;
   className?: string;
   poster?: string;
+  /** When true, fills the nearest positioned parent (no aspect-ratio wrapper)
+   *  — for embedding inside media stages / lightbox players. */
+  fill?: boolean;
 }
 
-/** Extract YouTube video ID from various URL formats. */
-function getYouTubeId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
-    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-  return null;
-}
-
-/** Extract Vimeo video ID from URL. */
-function getVimeoId(url: string): string | null {
-  const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  return match ? match[1] : null;
-}
-
-export function SafeVideo({ url, title, className, poster }: SafeVideoProps) {
+export function SafeVideo({ url, title, className, poster, fill }: SafeVideoProps) {
   const validatedUrl = validateVideoUrl(url);
 
   if (!validatedUrl) {
@@ -64,16 +54,17 @@ export function SafeVideo({ url, title, className, poster }: SafeVideoProps) {
   const youTubeId = getYouTubeId(validatedUrl);
   const vimeoId = getVimeoId(validatedUrl);
 
-  const containerClass = cn(
-    "relative w-full overflow-hidden rounded-2xl",
-    "aspect-video",
-    className,
-  );
+  const containerClass = fill
+    ? cn("absolute inset-0 h-full w-full overflow-hidden", className)
+    : cn(
+        "relative w-full overflow-hidden rounded-2xl",
+        "aspect-video",
+        className,
+      );
 
-  // YouTube embed
-  if (youTubeId) {
-    return (
-      <div className={containerClass}>
+  return (
+    <div className={containerClass}>
+      {youTubeId ? (
         <iframe
           src={`https://www.youtube-nocookie.com/embed/${youTubeId}`}
           title={title || "Video"}
@@ -83,14 +74,7 @@ export function SafeVideo({ url, title, className, poster }: SafeVideoProps) {
           allowFullScreen
           sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
         />
-      </div>
-    );
-  }
-
-  // Vimeo embed
-  if (vimeoId) {
-    return (
-      <div className={containerClass}>
+      ) : vimeoId ? (
         <iframe
           src={`https://player.vimeo.com/video/${vimeoId}`}
           title={title || "Video"}
@@ -100,22 +84,17 @@ export function SafeVideo({ url, title, className, poster }: SafeVideoProps) {
           allowFullScreen
           sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
         />
-      </div>
-    );
-  }
-
-  // Direct video file
-  return (
-    <div className={containerClass}>
-      <video
-        src={validatedUrl}
-        poster={poster}
-        controls
-        preload="metadata"
-        className="absolute inset-0 h-full w-full object-contain"
-      >
-        Your browser does not support video playback.
-      </video>
+      ) : (
+        <video
+          src={validatedUrl}
+          poster={poster}
+          controls
+          preload="metadata"
+          className="absolute inset-0 h-full w-full object-contain"
+        >
+          Your browser does not support video playback.
+        </video>
+      )}
     </div>
   );
 }

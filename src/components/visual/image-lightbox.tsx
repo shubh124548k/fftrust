@@ -4,6 +4,7 @@ import * as React from "react";
 import { X, ChevronLeft, ChevronRight, Play, Clapperboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateVideoUrl } from "@/lib/validation";
+import { SafeVideo } from "@/components/visual/safe-video";
 
 /**
  * FF TRUST — Media Lightbox (PROMPT 8 rework).
@@ -41,27 +42,6 @@ interface MediaLightboxProps {
   open: boolean;
   initialIndex?: number;
   onClose: () => void;
-}
-
-/** Extract YouTube video ID from various URL formats. */
-function getYouTubeId(url: string): string | null {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
-    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
-  ];
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-  return null;
-}
-
-/** Extract Vimeo video ID from URL. */
-function getVimeoId(url: string): string | null {
-  const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  return match ? match[1] : null;
 }
 
 export function ImageLightbox({
@@ -404,9 +384,6 @@ function VideoLightbox({
   closing: boolean;
   onClose: () => void;
 }) {
-  const youTubeId = getYouTubeId(url);
-  const vimeoId = getVimeoId(url);
-
   return (
     <div
       className="fixed inset-0 flex items-center justify-center p-4"
@@ -462,34 +439,7 @@ function VideoLightbox({
           <span className="font-mono-label text-[9px] text-white">VIDEO</span>
         </div>
 
-        {youTubeId ? (
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${youTubeId}`}
-            title={title}
-            className="absolute inset-0 h-full w-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowFullScreen
-            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-          />
-        ) : vimeoId ? (
-          <iframe
-            src={`https://player.vimeo.com/video/${vimeoId}`}
-            title={title}
-            className="absolute inset-0 h-full w-full"
-            allow="fullscreen; picture-in-picture; clipboard-write"
-            allowFullScreen
-            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-          />
-        ) : (
-          <video
-            src={url}
-            controls
-            preload="metadata"
-            className="absolute inset-0 h-full w-full bg-black"
-          >
-            Your browser does not support video playback.
-          </video>
-        )}
+        <SafeVideo url={url} title={title} fill />
       </div>
     </div>
   );

@@ -37,24 +37,39 @@ export function ParallaxLayer({
     const offset = (depth === 1 ? PARALLAX.layer1 : depth === 2 ? PARALLAX.layer2 : PARALLAX.layer3) * tier;
 
     let raf = 0;
+    // Cache the element's document position and height once (mount/resize).
+    // Scroll only reads window.scrollY — no forced layout read (getBoundingClientRect)
+    // per frame, which is the classic scroll-jank cost on mobile.
+    let docTop = 0;
+    let height = 0;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      docTop = rect.top + window.scrollY;
+      height = rect.height;
+    };
+    measure();
+
     const onScroll = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const rect = el.getBoundingClientRect();
         const winH = window.innerHeight;
         // progress: -1 (below) .. 0 (centered) .. 1 (above)
-        const progress = (rect.top + rect.height / 2 - winH / 2) / winH;
+        const progress = (window.scrollY + docTop + height / 2 - winH / 2) / winH;
         const translate = progress * offset * -1;
         el.style.transform = axis === "y" ? `translate3d(0, ${translate}px, 0)` : `translate3d(${translate}px, 0, 0)`;
       });
     };
     onScroll();
+    const onResize = () => {
+      measure();
+      onScroll();
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
     };
   }, [tier, depth, axis]);
 

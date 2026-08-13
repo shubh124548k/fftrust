@@ -48,6 +48,7 @@ import {
   filterRankPushPackages,
 } from "../src/lib/selectors/services";
 import { buildWhatsAppMessage } from "../src/lib/whatsapp";
+import { getHomepageCatalogueStats } from "../src/lib/selectors/catalogue";
 import { siteConfig } from "../src/config/site";
 import { z, DEPTH_LEVELS } from "../src/lib/design/depth";
 import { LIGHTING_PRESETS, LIGHTING_LABEL } from "../src/lib/design/lighting";
@@ -325,6 +326,31 @@ console.log("\n11. New Paid Push service → mode discovery + filter");
   const csOnly = filterRankPushPackages({ mode: "CS" }, pool);
   eq(csOnly.length, 1, "CS filter → 1");
   eq(getRealServiceCount([svcPanel], pool), 3, "total services = 1 panel + 2 push");
+}
+
+/* ============ 11b. HOMEPAGE CATALOGUE STATS (shared calculation) ============ */
+console.log("\n11b. Homepage catalogue stats → one shared calculation");
+{
+  const stats = getHomepageCatalogueStats([accA, accB], [svcPanel], [pushCS, pushBR]);
+  eq(stats.realAccounts, 2, "realAccounts = 2");
+  eq(stats.realPanelServices, 1, "realPanelServices = 1");
+  eq(stats.realPaidPushPackages, 2, "realPaidPushPackages = 2");
+  eq(stats.realServices, 3, "realServices = panel + push = 3");
+  eq(stats.totalLive, 5, "totalLive = 2 + 1 + 2 = 5");
+
+  const unpublish = getHomepageCatalogueStats(
+    [patch(accA, { published: false }), accB],
+    [svcPanel],
+    [pushCS, pushBR],
+  );
+  eq(unpublish.realAccounts, 1, "unpublish account → realAccounts drops to 1");
+  eq(unpublish.realServices, 3, "unpublish account → services unchanged");
+  eq(unpublish.totalLive, 4, "unpublish account → totalLive = 4");
+
+  const empty = getHomepageCatalogueStats();
+  eq(empty.realAccounts, 0, "canonical pools empty → realAccounts 0");
+  eq(empty.realServices, 0, "canonical pools empty → realServices 0");
+  eq(empty.totalLive, 0, "canonical pools empty → totalLive 0");
 }
 
 /* ============ 12. WHATSAPP CONFIG ============ */

@@ -20,10 +20,12 @@ import {
   Plus,
 } from "lucide-react";
 import { Hero } from "@/components/home/hero";
+import { CategoryHub } from "@/components/home/category-hub";
 import { SectionHeading } from "@/components/visual/section-heading";
 import { RevealText, RevealGroup } from "@/components/visual/reveal-text";
 import { GlassPanel, GlassCard } from "@/components/visual/glass-panel";
 import { BuyerProofPanel } from "@/components/proof/buyer-proof-panel";
+import { ProofCardGrid } from "@/components/proof/proof-card-grid";
 import { ParallaxLayer } from "@/components/visual/parallax-layer";
 import { MagneticButton } from "@/components/visual/magnetic-button";
 import { EmptyState } from "@/components/visual/empty-state";
@@ -125,6 +127,9 @@ export default function Home() {
       {/* 1 — HERO STAGE */}
       <Hero />
 
+      {/* 1a — CATEGORY HUB (four data-aware marketplace destinations) */}
+      <CategoryHub />
+
       {/* 1b — FREE TO JOIN (compact notice + premium promo card, top of home) */}
       <section id="free-join" aria-labelledby="free-join-title" className="section-ff relative" data-light="hero">
         <div className="container-wide flex flex-col gap-6">
@@ -159,15 +164,17 @@ export default function Home() {
               support="A high-density but premium catalogue. Search, filter and sort through canonical records — every value below is derived from published listings. No fake popularity, ratings or reviews."
               id="explore-title"
             />
+          </div>
+          <ExploreCatalogue rotate />
+          <div className="mt-8 flex justify-center">
             <Link
               href="/accounts"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent-azure)] hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent-azure)] hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
             >
               View All Accounts
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <ExploreCatalogue rotate />
         </div>
       </section>
 
@@ -241,6 +248,29 @@ export default function Home() {
       <section id="safety-academy" aria-labelledby="academy-title" className="section-ff relative" data-light="trust">
         <div className="container-wide">
           <SafetyAcademyJourney academy={safetyAcademy} />
+        </div>
+      </section>
+
+      {/* 6c — PROOF (compact buyer-proof card grid, same design language) */}
+      <section id="proof-guide" aria-labelledby="proof-guide-title" className="section-ff relative" data-light="safety">
+        <div className="container-wide">
+          <div className="mb-8 flex flex-col gap-4 sm:mb-10 lg:flex-row lg:items-end lg:justify-between">
+            <SectionHeading
+              overline="06c — Proof"
+              title="Buyer proof,"
+              italic="card by card"
+              support="Screen recording preserves clear evidence of the verification and transaction. This compact guide covers verification, evidence, transaction safety, scam prevention and more."
+              id="proof-guide-title"
+            />
+            <Link
+              href="/proof"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent-azure)] hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
+            >
+              Full PROOF guide
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <ProofCardGrid limit={6} />
         </div>
       </section>
 

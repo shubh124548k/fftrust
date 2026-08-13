@@ -106,7 +106,7 @@ export function SceneAtmosphere() {
 
       {/* Rainfall/Snowfall — 3 depth layers, visibly present */}
       {mounted && tier >= 1 && (
-        <RainfallCanvas count={tier >= 2 ? 80 : 40} />
+        <RainfallCanvas count={tier >= 2 ? 80 : 28} tier={tier} />
       )}
 
       {/* Fine grain */}
@@ -124,7 +124,7 @@ export function SceneAtmosphere() {
  * Respects reduced-motion (static render, no movement).
  * pointer-events:none, behind interactive content.
  */
-function RainfallCanvas({ count }: { count: number }) {
+function RainfallCanvas({ count, tier }: { count: number; tier: number }) {
   useEffect(() => {
     const canvas = document.getElementById("ff-rainfall") as HTMLCanvasElement | null;
     if (!canvas) return;
@@ -132,10 +132,17 @@ function RainfallCanvas({ count }: { count: number }) {
     if (!ctx) return;
 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Cap device pixel ratio by tier: mobile/coarse gets 1.5 (large fill-rate
+    // wins), desktop gets 2. Prevents weak GPUs from overdrawing a full-viewport
+    // fixed canvas during scroll.
+    const dpr = Math.min(window.devicePixelRatio || 1, tier >= 2 ? 2 : 1.5);
     let raf = 0;
     let w = window.innerWidth;
     let h = window.innerHeight;
+    // FPS cap (~30fps): skip frames closer together than 32ms. A rain shower
+    // does not need 60fps, and halving draw rate halves mobile jank during scroll.
+    let last = 0;
+    const FRAME_MS = 32;
 
     const resize = () => {
       w = window.innerWidth;
@@ -197,7 +204,12 @@ function RainfallCanvas({ count }: { count: number }) {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    const draw = () => {
+    const draw = (now: number) => {
+      if (now - last < FRAME_MS) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
+      last = now;
       ctx.clearRect(0, 0, w, h);
       const dark = isDark();
 
@@ -234,8 +246,9 @@ function RainfallCanvas({ count }: { count: number }) {
         ctx.fillStyle = color;
         ctx.fill();
 
-        // Foreground particles get a visible glow
-        if (p.layer === 2) {
+        // Foreground particles get a visible glow (skipped on tier 1 — saves a
+        // full extra fill pass per foreground particle on mobile).
+        if (p.layer === 2 && tier >= 2) {
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
           const glowColor = dark
@@ -247,14 +260,14 @@ function RainfallCanvas({ count }: { count: number }) {
       }
       if (!reduce) raf = requestAnimationFrame(draw);
     };
-    draw();
+    raf = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [count]);
+  }, [count, tier]);
 
   return (
     <canvas

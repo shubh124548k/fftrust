@@ -152,6 +152,7 @@ export function MobileCommandCenter({
           background: "oklch(0.1 0.01 255 / 0.5)",
           backdropFilter: "blur(12px) saturate(1.2)",
           WebkitBackdropFilter: "blur(12px) saturate(1.2)",
+          willChange: "opacity",
           animation: "ff-fade-in 220ms ease-out",
         }}
       >
@@ -163,7 +164,7 @@ export function MobileCommandCenter({
       <div
         ref={panelRef}
         className="glass-stack acrylic-sheen absolute inset-x-0 top-0 m-0 rounded-none p-4 sm:m-3 sm:rounded-3xl"
-        style={{ animation: "ff-slide-down 320ms cubic-bezier(0.22,1,0.36,1)", bottom: "0", maxHeight: "100dvh", overflowY: "auto" }}
+        style={{ animation: "ff-slide-down 320ms cubic-bezier(0.22,1,0.36,1)", willChange: "transform, opacity", bottom: "0", maxHeight: "100dvh", overflowY: "auto" }}
       >
         {/* Header */}
         <div className="sticky top-0 z-10 -mx-4 mb-4 flex items-center justify-between bg-gradient-to-b from-[var(--glass-bg-strong)] to-transparent px-4 pb-2 pt-1">

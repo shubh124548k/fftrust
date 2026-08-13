@@ -36,13 +36,14 @@ function check(name: string, ok: boolean, detail?: string) {
 }
 
 console.log("1) proofContent integrity");
-check("sections length is 12", proofContent.sections.length === 12, `got ${proofContent.sections.length}`);
+check("sections length is 18", proofContent.sections.length === 18, `got ${proofContent.sections.length}`);
 {
   const keys = proofContent.sections.map((s) => s.key);
   check("section keys are unique", new Set(keys).size === keys.length);
   const iconSet = new Set([
     "Video", "Play", "ShieldCheck", "Wallet", "MessageCircle", "FileCheck",
     "Lock", "Info", "UserCheck", "Store", "Fingerprint", "Scale",
+    "ScanSearch", "Receipt", "AlertTriangle", "ShieldAlert", "RefreshCcw", "Gavel",
   ]);
   const unknown = proofContent.sections.filter((s) => s.iconKey && !iconSet.has(s.iconKey));
   check("every section iconKey maps to a /proof icon", unknown.length === 0, JSON.stringify(unknown.map((s) => s.iconKey)));

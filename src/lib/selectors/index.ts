@@ -4,6 +4,7 @@
  */
 export * from "./accounts";
 export * from "./services";
+export * from "./catalogue";
 export * from "./sellers";
 export * from "./modules";
 export * from "./content";

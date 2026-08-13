@@ -295,9 +295,12 @@ console.log("8. Shared listing transformers");
   assert(getListingPrice(rec) === rec.priceInr, "getListingPrice = priceInr");
   assert(getListingEvidence(rec) === rec.evidence, "getListingEvidence returns account evidence");
 
-  // getListingMedia is generic across listing kinds (panel + push).
-  assert(getListingMedia(samplePanelServices[0], "T").frontImage === null, "getListingMedia works for panel (no media)");
-  assert(getListingMedia(sampleRankPushPackages[0], "T").frontImage === null, "getListingMedia works for push (no media)");
+  // getListingMedia is generic across listing kinds (panel + push). Both
+  // sample fixtures carry canonical media incl. videoUrl (video-below-gallery).
+  assert(getListingMedia(samplePanelServices[0], "T").frontImage !== null, "getListingMedia works for panel (media resolved)");
+  assert(getListingMedia(sampleRankPushPackages[0], "T").frontImage !== null, "getListingMedia works for push (media resolved)");
+  assert(getListingMedia(samplePanelServices[0], "T").videoUrl !== null, "getListingMedia resolves panel videoUrl");
+  assert(getListingMedia(sampleRankPushPackages[0], "T").videoUrl !== null, "getListingMedia resolves push videoUrl");
 
   // Legacy helpers still read evidence images.
   eq(getEvidenceImages(accWithMedia()).length, 1, "getEvidenceImages only evidence images");

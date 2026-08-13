@@ -100,6 +100,7 @@ export function MediaStage({
           src={media!.url}
           alt={media!.alt ?? title}
           loading="lazy"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           onError={() => setBroken(true)}
         />

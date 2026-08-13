@@ -111,6 +111,7 @@ export function AccountCard({
               src={frontImage}
               alt={frontImageAlt}
               loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={(e) => {
                 const t = e.currentTarget;

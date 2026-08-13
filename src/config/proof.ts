@@ -120,5 +120,41 @@ export const proofContent = {
       iconKey: "Scale",
       body: "FF TRUST is not affiliated with, endorsed by, or sponsored by Garena or Free Fire. The website cannot start screen recording and never collects your credentials.",
     },
+    {
+      key: "verification",
+      title: "What verification involves",
+      iconKey: "ScanSearch",
+      body: "Verification is an honest live inspection of the listed account: in-game walkthrough, live checks and shared screen where agreed. It is a process, not a guarantee — verify the claimed value yourself while recording.",
+    },
+    {
+      key: "transaction-safety",
+      title: "Transaction safety",
+      iconKey: "Receipt",
+      body: "Keep recording through payment, settlement and handover. Confirm the exact price, delivery method and account details in writing before sending anything, and keep the recorded sequence until every step is complete.",
+    },
+    {
+      key: "scam-prevention",
+      title: "Scam prevention",
+      iconKey: "AlertTriangle",
+      body: "Be alert to pressure tactics, urgent off-platform deals, prices that look too good, and requests to move the conversation away from recorded channels. When something feels rushed, slow down and re-verify before continuing.",
+    },
+    {
+      key: "impersonation-warning",
+      title: "Impersonation warning",
+      iconKey: "ShieldAlert",
+      body: "Scammers may impersonate FF TRUST, its owner or a seller. FF TRUST never asks for credentials or payment on behalf of any party — always confirm the real identity of who you are dealing with, in the recorded conversation.",
+    },
+    {
+      key: "recovery-account-transfer",
+      title: "Recovery & account-transfer safety",
+      iconKey: "RefreshCcw",
+      body: "During delivery and after handover, keep recovery and login details private, change them in your control only after the transfer is agreed, and never share recovery codes, OTPs or linked-account credentials.",
+    },
+    {
+      key: "dispute-evidence",
+      title: "Dispute evidence",
+      iconKey: "Gavel",
+      body: "If a dispute arises, the screen recording, listing screenshot, conversation timestamps and transaction references are the honest evidence base. Keep them organised and complete — they are the record of what actually happened.",
+    },
   ] satisfies ProofSection[],
 };

@@ -133,6 +133,24 @@ export function useAutoRotation(
     };
   }, [enabled, paused, totalPages, advance, intervalMs]);
 
+  // Pause nonessential rotation while the tab is hidden (backgrounded app or
+  // switched away). Browsers throttle timers in hidden tabs, which causes the
+  // rotor to freeze mid-exit and resume with a stale phase; pausing here and
+  // resuming a fresh 5s cadence on return keeps every section consistent with
+  // zero timers running while invisible.
+  React.useEffect(() => {
+    if (!enabled) return;
+    const onVisibility = () => {
+      if (document.hidden) {
+        hold();
+      } else {
+        release();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [enabled, hold, release]);
+
   React.useEffect(() => {
     return () => {
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);

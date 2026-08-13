@@ -7,8 +7,8 @@
  * 1. Account Details opens/closes from a card (dialog, scroll-lock, Escape).
  * 2. Media gallery: up to 30-image stage, thumbnails, counter, prev/next,
  *    fullscreen lightbox, keyboard, scroll-lock release.
- * 3. Video: YouTube/Vimeo embed via youtube-nocookie (no autoplay, no native
- *    broken <video src>).
+ * 3. Video: YouTube/Vimeo embed via youtube-nocookie rendered BELOW the image
+ *    gallery (no autoplay, no native broken <video src>).
  * 4. WhatsApp auto-inquiry from Details carries canonical id/title/price +
  *    Category + Buyer Proof lines (recording reminder + never-share).
  * 5. Service Details (Panel + Paid Push) show the BuyerProofPanel and send
@@ -43,6 +43,12 @@ const PROOF_SECTION_TITLES = [
   "Seller responsibilities",
   "Evidence and provenance",
   "Independent platform disclaimer",
+  "What verification involves",
+  "Transaction safety",
+  "Scam prevention",
+  "Impersonation warning",
+  "Recovery & account-transfer safety",
+  "Dispute evidence",
 ];
 
 const PROOF_KEEP_RECORDING = [
@@ -228,9 +234,9 @@ function check(name, ok, detail) {
   await sleep(300);
 
   // ---------------------------------------------------------------
-  // 3) Video embed (Starter Vault, 2 images + YouTube)
+  // 3) Video embed (Starter Vault, 2 images + YouTube below gallery)
   // ---------------------------------------------------------------
-  console.log("3) Video embed — no autoplay, youtube-nocookie");
+  console.log("3) Video embed — below gallery, no autoplay, youtube-nocookie");
   await page.evaluate((t) => {
     const b = Array.from(document.querySelectorAll("button")).find((x) => (x.getAttribute("aria-label") || "") === `View details for ${t}`);
     if (b) b.click();
@@ -244,17 +250,16 @@ function check(name, ok, detail) {
       return {
         thumbs: d.querySelectorAll('button[aria-label^="View media"]').length,
         counter: spans.find((s) => /^\d+ \/ \d+$/.test(s)) || null,
+        videoLabel: (d.textContent || "").includes("Video"),
+        iframes: d.querySelectorAll("iframe").length,
       };
     });
-    check("video account has 3 media", g && g.thumbs === 3, JSON.stringify(g));
+    check("video account gallery is images-only (2 thumbnails)", g && g.thumbs === 2, JSON.stringify(g));
+    check("image counter starts at 1 / 2", g && g.counter === "1 / 2", JSON.stringify(g));
+    check("video section label rendered below gallery", g && g.videoLabel);
+    check("exactly one video iframe (below gallery)", g && g.iframes === 1, JSON.stringify(g));
   }
 
-  await page.evaluate(() => {
-    const d = document.querySelector('[role="dialog"][aria-label="Account detail"]');
-    const btns = Array.from(d.querySelectorAll('button[aria-label^="View media"]'));
-    btns[btns.length - 1].click();
-  });
-  await sleep(500);
   {
     const v = await page.evaluate(() => {
       const d = document.querySelector('[role="dialog"][aria-label="Account detail"]');
@@ -277,15 +282,15 @@ function check(name, ok, detail) {
     const lb = await page.evaluate((t) => {
       const d = document.querySelector(`[aria-label="${t} — fullscreen gallery"]`);
       if (!d) return null;
-      const iframe = d.querySelector("iframe");
-      const video = d.querySelector("video");
       return {
-        iframeSrc: iframe ? iframe.getAttribute("src") : null,
-        nativeVideoSrc: video ? video.getAttribute("src") : null,
+        imgs: d.querySelectorAll("img").length,
+        iframes: d.querySelectorAll("iframe").length,
+        nativeVideos: d.querySelectorAll("video").length,
       };
     }, STARTER);
-    check("lightbox video uses embed iframe", !!lb && !!lb.iframeSrc && lb.iframeSrc.includes("youtube-nocookie.com/embed/"), JSON.stringify(lb));
-    check("lightbox video is not native src", !!(lb && !lb.nativeVideoSrc));
+    check("lightbox shows the active image", !!lb && lb.imgs === 1, JSON.stringify(lb));
+    check("lightbox is images-only (no video iframe)", !!lb && lb.iframes === 0, JSON.stringify(lb));
+    check("lightbox has no native <video>", !!lb && lb.nativeVideos === 0, JSON.stringify(lb));
   }
   await page.keyboard.press("Escape");
   await sleep(300);

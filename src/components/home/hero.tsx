@@ -10,7 +10,7 @@ import { GlassPanel } from "@/components/visual/glass-panel";
 import { StatusChip } from "@/components/visual/status-chip";
 import { siteConfig } from "@/config/site";
 import { buildWhatsAppUrl, buildFreeJoinWhatsAppUrl } from "@/lib/whatsapp";
-import { getRealAccountCount, getRealServiceCount } from "@/lib/selectors";
+import { getHomepageCatalogueStats } from "@/lib/selectors";
 import { z } from "@/lib/design/depth";
 
 /**
@@ -33,8 +33,7 @@ import { z } from "@/lib/design/depth";
  */
 export function Hero() {
   const wa = buildWhatsAppUrl({ inquiry: "Hello FF TRUST, I'd like to know more." });
-  const realAccounts = getRealAccountCount();
-  const realServices = getRealServiceCount();
+  const stats = getHomepageCatalogueStats();
 
   return (
     <section
@@ -115,9 +114,9 @@ export function Hero() {
           {/* Honest counts — never faked */}
           <RevealText delay={340}>
             <GlassPanel depth="thin" className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl px-5 py-4">
-              <Stat label="Real accounts listed" value={realAccounts} />
+              <Stat label="Real accounts listed" value={stats.realAccounts} />
               <span aria-hidden className="hidden h-8 w-px bg-[var(--border)] sm:block" />
-              <Stat label="Real services live" value={realServices} />
+              <Stat label="Real services live" value={stats.realServices} />
               <span aria-hidden className="hidden h-8 w-px bg-[var(--border)] sm:block" />
               <Stat label="Independent of" value="Garena" sub="not affiliated" />
             </GlassPanel>

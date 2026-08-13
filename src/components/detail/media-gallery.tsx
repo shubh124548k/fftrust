@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, X, Expand, ImageOff, Play } from "lucide-rea
 import { cn } from "@/lib/utils";
 import type { ListingMedia } from "@/data/types";
 import { usePerformanceTier } from "@/lib/design/use-performance-tier";
-import { toVideoEmbedUrl } from "@/lib/media";
+import { SafeVideo } from "@/components/visual/safe-video";
 
 /**
  * FF TRUST — Media Gallery (PROMPT 07).
@@ -16,7 +16,9 @@ import { toVideoEmbedUrl } from "@/lib/media";
  *  - touch swipe (pointer events, transform-only)
  *  - lightbox (fullscreen overlay, keyboard nav)
  *  - keyboard navigation (← → for prev/next, Escape to close lightbox)
- *  - video with poster (play button overlay)
+ *  - canonical `videoUrl` media rendered BELOW the image gallery via the
+ *    single reusable SafeVideo component (no video loads until the detail
+ *    view opens)
  *  - no-media decorative state (crystalline gradient + motif)
  *
  * Tier-aware: swipe parallax reduced on low tiers. Reduced-motion: no swipe
@@ -34,9 +36,8 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
 
   const images = media.filter((m) => m.kind === "image");
   const videos = media.filter((m) => m.kind === "video");
-  const allMedia = [...images, ...videos];
-  const hasMedia = allMedia.length > 0;
-  const active = allMedia[Math.min(activeIndex, allMedia.length - 1)];
+  const hasImages = images.length > 0;
+  const active = images[Math.min(activeIndex, images.length - 1)];
 
   const touchStartX = React.useRef<number | null>(null);
   const touchDelta = React.useRef(0);
@@ -44,8 +45,8 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
 
   const goNext = React.useCallback(() => {
     directionRef.current = "next";
-    setActiveIndex((i) => Math.min(i + 1, allMedia.length - 1));
-  }, [allMedia.length]);
+    setActiveIndex((i) => Math.min(i + 1, images.length - 1));
+  }, [images.length]);
 
   const goPrev = React.useCallback(() => {
     directionRef.current = "prev";
@@ -96,37 +97,33 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {hasMedia && active ? (
-          active.kind === "image" ? (
-            brokenUrls.has(activeIndex) ? (
-              <BrokenMediaState />
-            ) : (
-              <img
-                key={activeIndex}
-                src={active.url}
-                alt={active.alt ?? title}
-                loading="lazy"
-                className={cn(
-                  "absolute inset-0 h-full w-full object-contain",
-                  directionRef.current === "next" ? "media-enter-right" : "media-enter-left",
-                )}
-                onError={() => markBroken(activeIndex)}
-              />
-            )
+        {hasImages && active ? (
+          brokenUrls.has(activeIndex) ? (
+            <BrokenMediaState />
           ) : (
-            <VideoStage url={active.url} poster={active.alt} title={title} />
+            <img
+              key={activeIndex}
+              src={active.url}
+              alt={active.alt ?? title}
+              loading="lazy"
+              className={cn(
+                "absolute inset-0 h-full w-full object-contain",
+                directionRef.current === "next" ? "media-enter-right" : "media-enter-left",
+              )}
+              onError={() => markBroken(activeIndex)}
+            />
           )
         ) : (
           <NoMediaState />
         )}
 
-        {hasMedia && active?.evidence && (
+        {hasImages && active?.evidence && (
           <span className="absolute left-3 top-3 rounded-full bg-[oklch(0.55_0.14_160/0.85)] px-2.5 py-1 font-mono-label text-[8px] text-white">
             Evidence
           </span>
         )}
 
-        {allMedia.length > 1 && (
+        {images.length > 1 && (
           <>
             <button
               type="button"
@@ -141,7 +138,7 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
               type="button"
               aria-label="Next media"
               onClick={goNext}
-              disabled={activeIndex >= allMedia.length - 1}
+              disabled={activeIndex >= images.length - 1}
               className="glass-embed absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[var(--ink)] transition-opacity disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
             >
               <ChevronRight className="h-4 w-4" />
@@ -149,7 +146,7 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
           </>
         )}
 
-        {hasMedia && (
+        {hasImages && (
           <button
             type="button"
             aria-label="Open fullscreen"
@@ -160,17 +157,17 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
           </button>
         )}
 
-        {allMedia.length > 1 && (
+        {images.length > 1 && (
           <span className="absolute bottom-3 right-3 rounded-full bg-[oklch(0.16_0.012_255/0.6)] px-2.5 py-1 font-mono-label text-[8px] text-white backdrop-blur-sm">
-            {activeIndex + 1} / {allMedia.length}
+            {activeIndex + 1} / {images.length}
           </span>
         )}
       </div>
 
-      {/* Thumbnail rail */}
-      {allMedia.length > 1 && (
+      {/* Thumbnail rail — images only */}
+      {images.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]">
-          {allMedia.map((m, i) => (
+          {images.map((m, i) => (
             <button
               key={i}
               type="button"
@@ -184,34 +181,50 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
                   : "border-transparent opacity-60 hover:opacity-100",
               )}
             >
-              {m.kind === "image" ? (
-                brokenUrls.has(i) ? (
-                  <div className="flex h-full w-full items-center justify-center" style={{ background: DECORATIVE_GRADIENT }}>
-                    <ImageOff className="h-4 w-4 text-[var(--ink-soft)]" />
-                  </div>
-                ) : (
-                  <img
-                    src={m.url}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                    onError={() => markBroken(i)}
-                  />
-                )
-              ) : (
+              {brokenUrls.has(i) ? (
                 <div className="flex h-full w-full items-center justify-center" style={{ background: DECORATIVE_GRADIENT }}>
-                  <Play className="h-4 w-4 text-white" />
+                  <ImageOff className="h-4 w-4 text-[var(--ink-soft)]" />
                 </div>
+              ) : (
+                <img
+                  src={m.url}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                  onError={() => markBroken(i)}
+                />
               )}
             </button>
           ))}
         </div>
       )}
 
-      {/* Lightbox */}
-      {lightboxOpen && hasMedia && (
+      {/* Video section — canonical videoUrl renders BELOW the image gallery.
+          Only mounted when a video exists in the canonical media list, so no
+          video is ever loaded until the detail view is opened. */}
+      {videos.length > 0 && (
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center gap-2">
+            <Play className="h-3.5 w-3.5 text-[var(--accent-azure)]" />
+            <p className="font-mono-label text-[9px] text-[var(--accent-azure)]">Video</p>
+            {videos.some((v) => v.evidence) && (
+              <span className="rounded-full bg-[oklch(0.55_0.14_160/0.85)] px-2 py-0.5 font-mono-label text-[8px] text-white">
+                Evidence
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-4">
+            {videos.map((v, i) => (
+              <SafeVideo key={`${v.url}-${i}`} url={v.url} title={title} poster={v.alt} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox — images only */}
+      {lightboxOpen && hasImages && (
         <Lightbox
-          media={allMedia}
+          media={images}
           title={title}
           activeIndex={activeIndex}
           setActiveIndex={setActiveIndex}
@@ -245,31 +258,6 @@ function BrokenMediaState() {
       <ImageOff className="h-8 w-8 text-[var(--ink-soft)] opacity-40" />
       <p className="font-mono-label text-[9px] text-[var(--ink-soft)]">Media unavailable</p>
     </div>
-  );
-}
-
-function VideoStage({ url, poster, title }: { url: string; poster?: string; title: string }) {
-  const embedUrl = toVideoEmbedUrl(url);
-  if (embedUrl) {
-    return (
-      <iframe
-        src={embedUrl}
-        title={`Video for ${title}`}
-        className="absolute inset-0 h-full w-full rounded-2xl object-cover"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        allowFullScreen
-      />
-    );
-  }
-  return (
-    <video
-      src={url}
-      poster={poster}
-      controls
-      preload="metadata"
-      className="absolute inset-0 h-full w-full object-cover"
-      aria-label={`Video for ${title}`}
-    />
   );
 }
 
@@ -344,21 +332,17 @@ function Lightbox({
         </>
       )}
       <div className="max-h-[85vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
-        {active?.kind === "image" ? (
-          brokenUrls.has(activeIndex) ? (
-            <div className="flex h-[60vh] w-[80vw] items-center justify-center rounded-2xl" style={{ background: DECORATIVE_GRADIENT }}>
-              <ImageOff className="h-10 w-10 text-white opacity-40" />
-            </div>
-          ) : (
-            <img
-              src={active.url}
-              alt={active.alt ?? title}
-              className="max-h-[85vh] max-w-[90vw] rounded-2xl object-contain"
-              onError={() => markBroken(activeIndex)}
-            />
-          )
+        {brokenUrls.has(activeIndex) ? (
+          <div className="flex h-[60vh] w-[80vw] items-center justify-center rounded-2xl" style={{ background: DECORATIVE_GRADIENT }}>
+            <ImageOff className="h-10 w-10 text-white opacity-40" />
+          </div>
         ) : (
-          <VideoStage url={active?.url ?? ""} poster={active?.alt} title={title} />
+          <img
+            src={active.url}
+            alt={active.alt ?? title}
+            className="max-h-[85vh] max-w-[90vw] rounded-2xl object-contain"
+            onError={() => markBroken(activeIndex)}
+          />
         )}
       </div>
       <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-[oklch(0.16_0.012_255/0.7)] px-3 py-1.5 font-mono-label text-[9px] text-white backdrop-blur-sm">

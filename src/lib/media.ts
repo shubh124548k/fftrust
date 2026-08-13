@@ -22,7 +22,7 @@ interface MediaBearingListing {
   frontImage?: string;
   galleryImages?: string[];
   videoUrl?: string;
-  media?: Array<{ kind: "image" | "video"; url: string; alt?: string }>;
+  media?: ListingMedia[];
 }
 
 export interface ResolvedMedia {
@@ -94,19 +94,45 @@ export function resolveListingMedia(
 /**
  * Build the canonical `ListingMedia[]` list for a listing, matching the detail
  * dossier convention: `frontImage` (cover), then `galleryImages`, then
- * `videoUrl`, then any legacy `media[]` entries. Deduplication is left to the
- * consumer — this reproduces exactly the media that feeds the gallery.
+ * `videoUrl`, then any legacy `media[]` entries.
+ *
+ * Every URL is validated (http/https + provider allowlist), entries are
+ * deduplicated by URL (first occurrence wins) and image entries are capped at
+ * MAX_LISTING_IMAGES — a video entry always survives so a full gallery can
+ * never push `videoUrl` out of the Details media viewer. This is the single
+ * source of truth feeding every Details gallery.
  */
 export function toListingMediaList(
   listing: MediaBearingListing,
   title: string = "Listing",
 ): ListingMedia[] {
-  return [
-    ...(listing.frontImage ? [{ kind: "image" as const, url: listing.frontImage, alt: title }] : []),
-    ...(listing.galleryImages?.map((url) => ({ kind: "image" as const, url, alt: title })) ?? []),
-    ...(listing.videoUrl ? [{ kind: "video" as const, url: listing.videoUrl, alt: title }] : []),
-    ...(listing.media ?? []),
-  ];
+  const { frontImage, galleryImages, videoUrl } = resolveListingMedia(listing, title);
+  const items: ListingMedia[] = [];
+  const seen = new Set<string>();
+  let imageCount = 0;
+
+  const push = (
+    url: string,
+    kind: "image" | "video",
+    extra?: Partial<ListingMedia>,
+  ) => {
+    if (!url || seen.has(url)) return;
+    if (kind === "image" && imageCount >= MAX_LISTING_IMAGES) return;
+    seen.add(url);
+    if (kind === "image") imageCount += 1;
+    items.push({ kind, url, alt: title, ...extra });
+  };
+
+  if (frontImage) push(frontImage, "image");
+  galleryImages.forEach((url) => push(url, "image"));
+  if (videoUrl) push(videoUrl, "video");
+  for (const m of listing.media ?? []) {
+    const validated =
+      m.kind === "video" ? validateVideoUrl(m.url) : validateImageUrl(m.url);
+    if (validated) push(validated, m.kind, { alt: m.alt, caption: m.caption, evidence: m.evidence });
+  }
+
+  return items;
 }
 
 /**
