@@ -74,34 +74,48 @@ export function useMounted(): boolean {
 export function useReveal<T extends HTMLElement = HTMLDivElement>(options?: {
   threshold?: number;
   once?: boolean;
+  /** Milliseconds after mount after which content is force-revealed even if
+   *  IntersectionObserver never fires. Guarantees cards never stay hidden. */
+  fallbackMs?: number;
 }) {
   const [ref, setRef] = useState<T | null>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (!ref) return;
+    const once = options?.once !== false;
+    const fallbackMs = options?.fallbackMs ?? 1200;
+
+    // PERMANENT VISIBILITY SAFETY NET: no content may stay at opacity:0
+    // forever. If the observer does not report the element as intersecting
+    // within a short window (throttled tabs, unsupported IO, tall cards near
+    // the fold, disabled JS-driven animation), force it visible.
+    const timer = setTimeout(() => setVisible(true), fallbackMs);
     if (typeof IntersectionObserver === "undefined") {
-      // Fallback: reveal immediately via the observer-callback path by
-      // scheduling through rAF (not a synchronous setState in effect body).
-      const id = requestAnimationFrame(() => setVisible(true));
-      return () => cancelAnimationFrame(id);
+      return () => clearTimeout(timer);
     }
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
             setVisible(true);
-            if (options?.once !== false) obs.unobserve(e.target);
-          } else if (options?.once === false) {
+            clearTimeout(timer);
+            if (once) obs.unobserve(e.target);
+          } else if (!once) {
             setVisible(false);
           }
         });
       },
-      { threshold: options?.threshold ?? 0.18, rootMargin: "0px 0px -8% 0px" },
+      // Gentle, tall-card-friendly threshold so multi-row cards on small
+      // screens still intersect instead of hovering just under the fold.
+      { threshold: options?.threshold ?? 0.05, rootMargin: "0px 0px -6% 0px" },
     );
     obs.observe(ref);
-    return () => obs.disconnect();
-  }, [ref, options?.threshold, options?.once]);
+    return () => {
+      clearTimeout(timer);
+      obs.disconnect();
+    };
+  }, [ref, options?.threshold, options?.once, options?.fallbackMs]);
 
   return { ref: setRef, visible } as const;
 }
