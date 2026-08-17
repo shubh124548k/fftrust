@@ -19,9 +19,9 @@ export default function AccountsPage() {
   return (
     <main className="relative pt-28 pb-20 sm:pt-32">
       <div className="container-wide">
-        <Breadcrumbs items={[{ label: "Catalogue" }, { label: "Accounts" }]} />
+        <Breadcrumbs items={[{ label: "Marketplace" }, { label: "Accounts" }]} />
         <Link
-          href="/#explore"
+          href="/#category-hub"
           className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -29,10 +29,10 @@ export default function AccountsPage() {
         </Link>
 
         <SectionHeading
-          overline="Full Catalogue — Accounts"
-          title="Free Fire account"
-          italic="listings"
-          support="Every published Free Fire account listing in the canonical catalogue. Values are derived from real published records — no fake popularity, ratings or reviews. Sort by price, compare and heart the ones you like."
+          overline="Marketplace — Free Fire"
+          title="Free Fire"
+          italic="Marketplace"
+          support="Browse available Free Fire accounts and find the one that fits you."
           id="accounts-title"
         />
 
@@ -47,7 +47,7 @@ export default function AccountsPage() {
       <BreadcrumbListJsonLd
         items={[
           { name: "Home", path: "/" },
-          { name: "Catalogue", path: "/#explore" },
+          { name: "Marketplace", path: "/#category-hub" },
           { name: "Accounts", path: "/accounts" },
         ]}
       />

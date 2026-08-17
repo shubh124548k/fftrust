@@ -14,14 +14,21 @@ import {
   AlertCircle,
   User,
   FileText,
+  Heart,
+  Columns3,
 } from "lucide-react";
 import { GlassPanel } from "@/components/visual/glass-panel";
-import { StatusChip, PricePlate, EvidenceChip } from "@/components/visual/status-chip";
+import { StatusChip, EvidenceChip } from "@/components/visual/status-chip";
+import { TrustHighlights } from "@/components/visual/trust-highlights";
+import { PriceDisplay } from "@/components/visual/price-display";
+import { SellerBadge } from "@/components/visual/seller-badge";
 import { MediaGallery } from "./media-gallery";
+import { MobileStickyCTA } from "./mobile-sticky-cta";
 import { AccountCard } from "@/components/visual/account-card";
 import { MagneticButton } from "@/components/visual/magnetic-button";
 import { RevealText } from "@/components/visual/reveal-text";
 import { BuyerProofPanel } from "@/components/proof/buyer-proof-panel";
+import { useFavoritesStore } from "@/stores/favorites";
 import type { AccountListing } from "@/data/types";
 import { buildWhatsAppUrl, accountWhatsAppContext } from "@/lib/whatsapp";
 import { toListingMediaList } from "@/lib/media";
@@ -44,6 +51,10 @@ import { cn } from "@/lib/utils";
 
 export function AccountDossier({ record }: { record: AccountListing }) {
   const related = getRelatedAccounts(record.id, 3);
+  const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
+  const toggleCompare = useFavoritesStore((s) => s.toggleCompare);
+  const isFavorite = useFavoritesStore((s) => s.favorites.includes(record.id));
+  const isComparing = useFavoritesStore((s) => s.compare.some((e) => e.id === record.id));
   const wa = buildWhatsAppUrl(
     accountWhatsAppContext(
       record,
@@ -54,9 +65,13 @@ export function AccountDossier({ record }: { record: AccountListing }) {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Top: identity + price */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-2">
+      {/* Top: media-first on mobile, media-left / info-right on desktop */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        <div className="lg:w-[min(620px,55%)] lg:shrink-0">
+          <MediaGallery media={toListingMediaList(record, record.title)} title={record.title} />
+        </div>
+
+        <div className="flex flex-1 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             {record.demo && <StatusChip tone="warn">SAMPLE</StatusChip>}
             {record.featured && !record.demo && (
@@ -70,17 +85,43 @@ export function AccountDossier({ record }: { record: AccountListing }) {
           <p className="font-mono-label text-[10px] text-[var(--ink-soft)]">
             {record.id} · {record.region}
           </p>
-        </div>
-        <div className="flex flex-col items-start gap-2 sm:items-end">
-          <PricePlate value={record.priceInr} size="lg" />
-          <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">
-            Contact Owner
-          </MagneticButton>
+          <SellerBadge sellerRef={record.sellerRef} showLabel />
+          <div className="mt-1 flex gap-2">
+            <button
+              type="button"
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              aria-pressed={isFavorite}
+              onClick={() => toggleFavorite(record.id)}
+              className={cn(
+                "glass-embed inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]",
+                isFavorite ? "text-[oklch(0.55_0.2_330)]" : "text-[var(--ink-soft)] hover:text-[var(--accent-violet)]",
+              )}
+            >
+              <Heart className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
+              {isFavorite ? "Saved" : "Save"}
+            </button>
+            <button
+              type="button"
+              aria-label={isComparing ? "Remove from compare" : "Add to compare"}
+              aria-pressed={isComparing}
+              onClick={() => toggleCompare(record.id, "account")}
+              className={cn(
+                "glass-embed inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]",
+                isComparing ? "text-[var(--accent-azure)]" : "text-[var(--ink-soft)] hover:text-[var(--accent-azure)]",
+              )}
+            >
+              <Columns3 className="h-3.5 w-3.5" />
+              {isComparing ? "Comparing" : "Compare"}
+            </button>
+          </div>
+          <div className="mt-2 flex flex-col items-start gap-3">
+            <PriceDisplay currentPrice={record.priceInr} originalPrice={record.originalPrice} size="lg" />
+            <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">
+              Contact Owner
+            </MagneticButton>
+          </div>
         </div>
       </div>
-
-      {/* Media gallery — canonical ListingMedia[] from shared helper */}
-      <MediaGallery media={toListingMediaList(record, record.title)} title={record.title} />
 
       {/* Buyer proof panel — canonical safety copy */}
       <BuyerProofPanel variant="banner" />
@@ -138,7 +179,7 @@ export function AccountDossier({ record }: { record: AccountListing }) {
               <User className="h-4 w-4 text-[var(--accent-azure)]" />
               <p className="font-mono-label text-[9px] text-[var(--accent-azure)]">Seller reference</p>
             </div>
-            <p className="text-sm font-medium text-[var(--ink)]">{record.sellerRef}</p>
+            <SellerBadge sellerRef={record.sellerRef} showLabel />
             <p className="mt-1 font-mono-label text-[8px] text-[var(--ink-soft)]">{record.id}</p>
           </GlassPanel>
 
@@ -174,6 +215,9 @@ export function AccountDossier({ record }: { record: AccountListing }) {
       <p className="mx-auto max-w-2xl text-center font-mono-label text-[9px] leading-relaxed text-[var(--ink-soft)]">
         {siteConfig.trustDisclaimer}
       </p>
+
+      {/* Mobile sticky CTA — wishlist + compare + Inquire (single synced state) */}
+      <MobileStickyCTA wa={wa} id={record.id} type="account" />
     </div>
   );
 }
@@ -205,6 +249,9 @@ function TrustPassport({ record }: { record: AccountListing }) {
         <EvidenceChip label="Receipt" present={record.evidence.hasOriginalReceipt} icon={<Receipt className="h-3 w-3" />} />
         <EvidenceChip label="Recovery" present={record.evidence.hasRecoveryAccess} icon={<KeyRound className="h-3 w-3" />} />
       </PassportSection>
+
+      {/* Trust highlights — data-driven, never fabricated */}
+      <TrustHighlights items={record.trustHighlights} max={Infinity} className="mt-2" />
 
       {/* Not verified — honest gaps */}
       <PassportSection label="Not verified" tone="warn" icon={<AlertCircle className="h-3 w-3" />}>

@@ -5,9 +5,17 @@
 //    with canonical data → remove one → only remaining stays → refresh persists → data matches records.
 // 3. Both work on desktop AND mobile. No console errors, no overflow.
 const puppeteer = require("puppeteer-core");
+const fs = require("fs");
 
 const BASE = "http://localhost:1111";
-const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const CANDIDATE_BROWSERS = [
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+];
+const BROWSER = CANDIDATE_BROWSERS.find((p) => fs.existsSync(p));
+if (!BROWSER) { console.error("No browser found for Puppeteer"); process.exit(1); }
 
 let failures = 0;
 function check(name, ok, extra = "") {
@@ -39,8 +47,17 @@ async function gatherCardTitles(page) {
   });
 }
 
+// Navbar wishlist count badge — §14: "♡ 3", updates immediately, absent at zero.
+async function wishlistBadge(page) {
+  return page.evaluate(() => {
+    const link = document.querySelector('a[aria-label="Wishlist"]');
+    const badge = link ? link.querySelector("span") : null;
+    return badge ? badge.textContent.trim() : null;
+  });
+}
+
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
+  const browser = await puppeteer.launch({ executablePath: BROWSER, headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
   const page = await browser.newPage();
   const consoleErrors = [];
   page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
@@ -48,13 +65,15 @@ async function gatherCardTitles(page) {
 
   // ===== DESKTOP =====
   await page.setViewport({ width: 1440, height: 900 });
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(600);
 
   // clear persisted state for a clean run
   await page.evaluate(() => localStorage.removeItem("ff-trust-favorites"));
   await page.reload({ waitUntil: "networkidle0" });
   await sleep(600);
+
+  check("Navbar wishlist badge absent at zero saved listings", (await wishlistBadge(page)) === null, JSON.stringify({ badge: await wishlistBadge(page) }));
 
   // -- 1. Heart on every account card --
   let cnt = await cardCounters(page);
@@ -70,6 +89,7 @@ async function gatherCardTitles(page) {
   await sleep(400);
   cnt = await cardCounters(page);
   check("Heart click activates card button (aria-pressed + filled)", cnt.activeHearts === 1, JSON.stringify(cnt));
+  check("Navbar wishlist badge updates to 1 immediately", (await wishlistBadge(page)) === "1", JSON.stringify({ badge: await wishlistBadge(page) }));
 
   // wishlist page shows the saved item
   await page.goto(`${BASE}/wishlist`, { waitUntil: "networkidle0", timeout: 60000 });
@@ -107,9 +127,11 @@ async function gatherCardTitles(page) {
     const dlg = document.querySelector('[role="dialog"][aria-label="Account detail"]');
     if (!dlg) return null;
     const h2 = dlg.querySelector("h2");
-    return { open: true, title: h2 ? h2.textContent.trim() : "" };
+    const saveBtn = Array.from(dlg.querySelectorAll("button")).find((b) => /Saved|Save/.test(b.textContent || ""));
+    return { open: true, title: h2 ? h2.textContent.trim() : "", saveLabel: saveBtn ? saveBtn.textContent.trim() : "" };
   });
   check("Saved card's Details opens the correct original listing", wlDetail && wlDetail.open && wlDetail.title === wlTitleBefore, JSON.stringify({ wlTitleBefore, wlDetail }));
+  check("Details dialog shows 'Saved' state synced with the card (§13)", wlDetail && wlDetail.saveLabel === "Saved", JSON.stringify(wlDetail));
   await page.keyboard.press("Escape");
   await sleep(300);
 
@@ -124,9 +146,10 @@ async function gatherCardTitles(page) {
     return cards.filter((c) => c.querySelector('button[aria-label^="Remove from favorites"]')).length;
   });
   check("Heart click again removes from wishlist", wlRemoved === 0, JSON.stringify({ wlRemoved }));
+  check("Navbar wishlist badge hides again at zero", (await wishlistBadge(page)) === null, JSON.stringify({ badge: await wishlistBadge(page) }));
 
   // -- 5. Compare: select account A + B, card active states --
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(600);
   await page.evaluate(() => localStorage.removeItem("ff-trust-favorites"));
   await page.reload({ waitUntil: "networkidle0" });
@@ -192,10 +215,10 @@ async function gatherCardTitles(page) {
   check("Compare selection persists after refresh (1 stays)", cmpPersisted.remaining === 1, JSON.stringify({ cmpPersisted }));
 
   // -- 9. Desktop dock shows selections --
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(600);
   const dockState = await page.evaluate(() => {
-    const dock = Array.from(document.querySelectorAll("div")).find((d) => d.textContent && /Compare\s*\(\d\/4\)/.test(d.textContent));
+    const dock = Array.from(document.querySelectorAll("div")).find((d) => d.textContent && /Compare\s*\(\d\/2\)/.test(d.textContent));
     if (!dock) return null;
     const chips = Array.from(dock.querySelectorAll("[aria-label^='Remove ']"));
     return { hasDock: true, chips: chips.length };
@@ -207,7 +230,7 @@ async function gatherCardTitles(page) {
 
   // ===== MOBILE =====
   await page.setViewport({ width: 375, height: 812 });
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(600);
   cnt = await cardCounters(page);
   check("Mobile: every account card shows Heart + Compare", cnt.total > 0 && cnt.withHeart === cnt.total && cnt.withCompare === cnt.total, JSON.stringify(cnt));
@@ -228,7 +251,7 @@ async function gatherCardTitles(page) {
   });
   check("Mobile: wishlist page shows favorited card", mobWl >= 1, JSON.stringify({ mobWl }));
 
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(600);
   await page.evaluate(() => {
     const btns = Array.from(document.querySelectorAll('[aria-label^="Account "] button[aria-label="Add to compare"]'));

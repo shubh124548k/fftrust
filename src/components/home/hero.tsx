@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { ArrowRight, ShieldCheck, Sparkles, ChevronDown, Compass, Server, Trophy, MessageCircle, Gem } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, ShieldCheck, Sparkles, ChevronDown, Compass, Server, Trophy, MessageCircle, Gem, Instagram, Check } from "lucide-react";
 import { SculpturalObject } from "@/components/visual/sculptural-object";
 import { ParallaxLayer } from "@/components/visual/parallax-layer";
 import { RevealText } from "@/components/visual/reveal-text";
@@ -32,6 +33,7 @@ import { z } from "@/lib/design/depth";
  * listings) — never faked.
  */
 export function Hero() {
+  const router = useRouter();
   const wa = buildWhatsAppUrl({ inquiry: "Hello FF TRUST, I'd like to know more." });
   const stats = getHomepageCatalogueStats();
 
@@ -84,11 +86,11 @@ export function Hero() {
                 id="hero-title"
                 className="font-heading text-balance text-6xl font-semibold leading-[0.94] tracking-tight text-[var(--ink)] sm:text-7xl lg:text-8xl xl:text-[7rem]"
               >
-                Account trust,
+                Trusted marketplace
                 <br />
-                <span className="font-display text-gradient-cyan italic">engineered</span>
+                for gaming accounts
                 <br />
-                with light.
+                <span className="font-display text-gradient-cyan italic">&amp; digital services</span>
               </h1>
             </RevealText>
             <RevealText delay={180}>
@@ -101,12 +103,41 @@ export function Hero() {
           <RevealText delay={260}>
             <div className="flex flex-wrap items-center gap-3">
               <MagneticButton
-                onClick={() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => router.push("/accounts")}
                 className="px-8 py-4 text-base"
               >
-                Explore accounts
+                Explore Accounts
                 <ArrowRight className="h-4 w-4" />
               </MagneticButton>
+              <MagneticButton
+                onClick={() => router.push("/services")}
+                variant="glass"
+                className="px-6 py-3 text-sm"
+              >
+                Panel Seller
+                <Server className="h-3.5 w-3.5" />
+              </MagneticButton>
+              <MagneticButton
+                onClick={() => router.push("/paid-push")}
+                variant="glass"
+                className="px-6 py-3 text-sm"
+              >
+                Paid Push
+                <Trophy className="h-3.5 w-3.5" />
+              </MagneticButton>
+              <MagneticButton
+                onClick={() => router.push("/instagram")}
+                variant="glass"
+                className="px-6 py-3 text-sm"
+              >
+                Instagram
+                <Instagram className="h-3.5 w-3.5" />
+              </MagneticButton>
+            </div>
+          </RevealText>
+
+          <RevealText delay={300}>
+            <div className="flex flex-wrap items-center gap-3">
               <FreeJoinHeroCard />
             </div>
           </RevealText>
@@ -118,8 +149,20 @@ export function Hero() {
               <span aria-hidden className="hidden h-8 w-px bg-[var(--border)] sm:block" />
               <Stat label="Real services live" value={stats.realServices} />
               <span aria-hidden className="hidden h-8 w-px bg-[var(--border)] sm:block" />
+              <Stat label="Instagram packages" value={stats.realInstagramPackages} />
+              <span aria-hidden className="hidden h-8 w-px bg-[var(--border)] sm:block" />
               <Stat label="Independent of" value="Garena" sub="not affiliated" />
             </GlassPanel>
+          </RevealText>
+
+          {/* Trust highlights — platform promise */}
+          <RevealText delay={380}>
+            <div className="flex flex-wrap gap-2">
+              <StatusChip tone="cyan" icon={<ShieldCheck className="h-3 w-3" />}>Real Listings</StatusChip>
+              <StatusChip tone="violet" icon={<Sparkles className="h-3 w-3" />}>Verified Details</StatusChip>
+              <StatusChip tone="azure" icon={<Check className="h-3 w-3" />}>Transparent Pricing</StatusChip>
+              <StatusChip tone="neutral" icon={<ShieldCheck className="h-3 w-3" />}>Evidence-First</StatusChip>
+            </div>
           </RevealText>
         </div>
 
@@ -192,13 +235,13 @@ export function Hero() {
       {/* Scroll cue — camera/scroll relationship */}
       <button
         type="button"
-        aria-label="Scroll to explore"
-        onClick={() => document.getElementById("explore")?.scrollIntoView({ behavior: "smooth" })}
+        aria-label="Scroll to browse categories"
+        onClick={() => document.getElementById("category-hub")?.scrollIntoView({ behavior: "smooth" })}
         className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[var(--ink-soft)] transition-colors hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
         style={{ zIndex: z("foregroundUI") }}
       >
         <span className="flex flex-col items-center gap-1">
-          <span className="font-mono-label text-[8px]">Scroll</span>
+          <span className="font-mono-label text-[8px]">Browse</span>
           <ChevronDown className="h-5 w-5 animate-bounce" />
         </span>
       </button>

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Instrument_Serif, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { RouteTransition } from "@/components/layout/route-transition";
@@ -10,6 +9,7 @@ import { SceneAtmosphere } from "@/components/visual/scene-atmosphere";
 import { AccountDetailOverlay } from "@/components/detail/account-detail-overlay";
 import { ServiceDetailOverlay } from "@/components/detail/service-detail-overlay";
 import { CompareDock } from "@/components/compare/compare-dock";
+import { CompareEducationHint } from "@/components/compare/compare-education-hint";
 import { SellerContactPopup } from "@/components/seller/seller-contact-popup";
 import { ScrollProgressBar } from "@/components/motion/scroll-progress-bar";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/seo/structured-data";
@@ -105,9 +105,9 @@ export default function RootLayout({
             <SceneAtmosphere />
             <ScrollManager />
             <ScrollProgressBar />
-            <a href="#explore" className="skip-link">Skip to content</a>
+            <a href="#main-content" className="skip-link">Skip to content</a>
             <SiteHeader />
-            <main className="relative flex-1" style={{ zIndex: "var(--z-foregroundUI)" }}>
+            <main id="main-content" className="relative flex-1 scroll-mt-24" style={{ zIndex: "var(--z-foregroundUI)" }}>
               <RouteTransition>{children}</RouteTransition>
             </main>
             <SiteFooter />
@@ -115,10 +115,10 @@ export default function RootLayout({
           <AccountDetailOverlay />
           <ServiceDetailOverlay />
           <CompareDock />
+          <CompareEducationHint />
           <SellerContactPopup />
           <OrganizationJsonLd />
           <WebSiteJsonLd />
-          <Toaster />
       </body>
     </html>
   );

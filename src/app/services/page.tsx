@@ -19,9 +19,9 @@ export default function ServicesPage() {
   return (
     <main className="relative pt-28 pb-20 sm:pt-32">
       <div className="container-wide">
-        <Breadcrumbs items={[{ label: "Catalogue" }, { label: "Services" }]} />
+        <Breadcrumbs items={[{ label: "Marketplace" }, { label: "Services" }]} />
         <Link
-          href="/#panel-seller"
+          href="/#category-hub"
           className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -47,7 +47,7 @@ export default function ServicesPage() {
       <BreadcrumbListJsonLd
         items={[
           { name: "Home", path: "/" },
-          { name: "Catalogue", path: "/#panel-seller" },
+          { name: "Marketplace", path: "/#category-hub" },
           { name: "Services", path: "/services" },
         ]}
       />

@@ -21,7 +21,6 @@ export function ViewsClientPage() {
       packages={packages}
       heroIcon={<Eye className="h-5 w-5 text-white" />}
       heroWord="Views"
-      cardLabel="VIEWS"
     />
   );
 }

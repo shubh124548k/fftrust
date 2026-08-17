@@ -7,40 +7,46 @@ import {
   X,
   Layers,
   Trophy,
-  ImageOff,
   Sparkles,
-  ArrowRight,
+  Play,
   Heart,
   Columns3,
 } from "lucide-react";
-import { GlassCard } from "./glass-panel";
-import { HoloChromeCard, FloatingPricePlate } from "./holo-chrome-card";
-import { StatusChip, PricePlate } from "./status-chip";
+import { HoloChromeCard } from "./holo-chrome-card";
+import { StatusChip } from "./status-chip";
+import { TrustHighlights } from "./trust-highlights";
+import { PriceDisplay } from "./price-display";
+import { CardMediaStage } from "./card-media-stage";
 import type { PanelSellerService, PaidPushService } from "@/data/types";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import { siteConfig } from "@/config/site";
 import { useFavoritesStore } from "@/stores/favorites";
 import { resolveListingMedia, getListingAllImages } from "@/lib/media";
+import { getStartingPrice, getBestPackage } from "@/lib/pricing";
 import { ImageLightbox } from "./image-lightbox";
+import { SellerBadge } from "./seller-badge";
+import { PackageTierStrip } from "./package-tier-strip";
 import { cn } from "@/lib/utils";
-
-const DECORATIVE_GRADIENT =
-  "linear-gradient(135deg, oklch(0.82 0.1 200 / 0.35) 0%, oklch(0.7 0.12 290 / 0.22) 50%, oklch(0.9 0.02 245 / 0.5) 100%)";
 
 /**
  * FF TRUST — Panel Service Card (PROMPT 10 advanced).
  *
  * A distinct service-card composition, not an account-listing clone:
  *  • background depth layer (in GlassCard)
- *  • media stage (reserved aspect, lazy, broken-media fallback, category glyph)
+ *  • rotating media stage (reserved aspect, lazy, broken-media fallback,
+ *    category glyph on no-media)
  *  • glass content plane
  *  • title hierarchy + scope chips
- *  • floating price plate
+ *  • floating price plate — 3-part (struck original + current + SAVE badge)
  *  • included/excluded treatment
  *  • action controls (WhatsApp + Details — user presses Send)
  *  • hover/focus/active + reduced-motion states
  *  • light sweep on hover
  *  • SAMPLE badge when demo
+ *
+ * PROMPT 03 repair: cards answer WHAT/WHO/KEY HIGHLIGHTS/VIDEO?/PRICE/SAVE/
+ * COMPARE/OPEN-BUY. Seller is prominent. Evidence/disclaimers live in the
+ * Detail dossier, not the card. Wishlist + compare use the shared persisted
+ * store; child controls stopPropagation so they never trigger parent nav.
  */
 export function PanelServiceCard({
   record,
@@ -54,14 +60,15 @@ export function PanelServiceCard({
   const wa = buildWhatsAppUrl({
     id: record.id,
     title: record.title,
-    price: record.priceInr,
+    price: getStartingPrice(record),
     mode: record.category,
     sellerRef: record.sellerRef,
     inquiry: "Interested in this service. Please share scope & availability.",
   });
+  const hasPackages = !!(record.packages && record.packages.length > 0);
+  const best = getBestPackage(record);
 
-  const { frontImage, frontImageAlt, videoUrl } = resolveListingMedia(record, record.title);
-  const hasRealMedia = !!frontImage;
+  const { frontImage, videoUrl } = resolveListingMedia(record, record.title);
   const isFeatured = !!record.featured && !record.demo;
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const isFavorite = useFavoritesStore((s) => s.favorites.includes(record.id));
@@ -83,42 +90,33 @@ export function PanelServiceCard({
         className="relative w-full overflow-hidden rounded-t-3xl"
         style={{ height: "clamp(120px, 24vw, 180px)" }}
       >
-        {hasRealMedia && frontImage ? (
-          <button
-            type="button"
-            aria-label={`View images for ${record.title}`}
-            onClick={(e) => { e.preventDefault(); setLightboxOpen(true); }}
-            className="absolute inset-0 z-[1] cursor-pointer"
-          >
-            <img
-              src={frontImage}
-              alt={frontImageAlt}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          </button>
-        ) : (
-          <div aria-hidden className="absolute inset-0" style={{ background: DECORATIVE_GRADIENT }}>
-            {/* Category glyph — decorative, original abstract */}
-            <svg aria-hidden className="absolute right-6 top-1/2 -translate-y-1/2 opacity-60" width="80" height="80" viewBox="0 0 80 80" fill="none">
-              <rect x="16" y="16" width="48" height="48" rx="8" stroke="oklch(1 0 0 / 0.5)" strokeWidth="1" fill="oklch(1 0 0 / 0.08)" />
-              <rect x="26" y="26" width="28" height="28" rx="4" stroke="oklch(0.74 0.15 196 / 0.5)" strokeWidth="0.8" fill="none" />
-              <circle cx="40" cy="40" r="6" fill="oklch(0.74 0.15 196 / 0.4)" />
-            </svg>
-          </div>
-        )}
-
-        {/* Light sweep on hover */}
-        <div aria-hidden className="sheen-sweep absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <CardMediaStage
+          images={allImages}
+          frontImage={frontImage}
+          title={record.title}
+          overlay={
+            !frontImage ? (
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 opacity-60">
+                <svg aria-hidden width="80" height="80" viewBox="0 0 80 80" fill="none">
+                  <rect x="16" y="16" width="48" height="48" rx="8" stroke="oklch(1 0 0 / 0.5)" strokeWidth="1" fill="oklch(1 0 0 / 0.08)" />
+                  <rect x="26" y="26" width="28" height="28" rx="4" stroke="oklch(0.74 0.15 196 / 0.5)" strokeWidth="0.8" fill="none" />
+                  <circle cx="40" cy="40" r="6" fill="oklch(0.74 0.15 196 / 0.4)" />
+                </svg>
+              </span>
+            ) : undefined
+          }
+          onOpenLightbox={() => setLightboxOpen(true)}
+        />
 
         {/* Top-left badges */}
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5 sm:left-4 sm:top-4">
+        <div className="absolute left-3 top-3 z-[2] flex max-w-[calc(100%-5.5rem)] flex-nowrap gap-1.5 overflow-hidden sm:left-4 sm:top-4 sm:max-w-none sm:flex-wrap">
           <StatusChip tone="violet" icon={<Layers className="h-3 w-3" />}>{record.category}</StatusChip>
           {isFeatured && <StatusChip tone="cyan" icon={<Sparkles className="h-3 w-3" />}>Featured</StatusChip>}
+          {videoUrl && <StatusChip tone="azure" icon={<Play className="h-3 w-3" />}>Demo</StatusChip>}
         </div>
 
         {/* Top-right favorite + compare toggles */}
-        <div className="absolute right-2.5 top-2.5 flex gap-1.5 sm:right-3 sm:top-3">
+        <div className="absolute right-2.5 top-2.5 z-[2] flex gap-1.5 sm:right-3 sm:top-3">
           <button
             type="button"
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -151,10 +149,15 @@ export function PanelServiceCard({
           </button>
         </div>
 
-        {/* Floating price plate — bottom-right, constrained on mobile */}
-        <div className="absolute -bottom-px right-3 max-w-[calc(100%-1.5rem)] sm:right-4">
+        {/* Floating price plate — 3-part price (struck original + current + SAVE) */}
+        <div className="absolute -bottom-px right-3 z-[2] max-w-[calc(100%-1.5rem)] sm:right-4">
           <div className="glass-float rounded-xl px-2.5 py-1.5 sm:rounded-2xl sm:px-3 sm:py-2" style={{ boxShadow: "var(--glass-shadow-lift)" }}>
-            <PricePlate value={record.priceInr} size="sm" />
+            <PriceDisplay
+              currentPrice={getStartingPrice(record)}
+              originalPrice={best?.originalPrice}
+              startingFrom={hasPackages}
+              size="sm"
+            />
           </div>
         </div>
       </div>
@@ -163,7 +166,8 @@ export function PanelServiceCard({
       <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 pt-5 sm:flex-1 sm:gap-3 sm:p-5 sm:pt-7">
         <div className="min-w-0">
           <h3 className="font-heading text-sm font-semibold leading-tight text-[var(--ink)] sm:text-lg">{record.title}</h3>
-          <p className="mt-0.5 font-mono-label text-[9px] text-[var(--ink-soft)] sm:mt-1 sm:text-[10px]">{record.id} · {record.sellerRef}</p>
+          <p className="mt-0.5 font-mono-label text-[9px] text-[var(--ink-soft)] sm:mt-1 sm:text-[10px]">{record.id}</p>
+          <SellerBadge sellerRef={record.sellerRef} showLabel className="mt-1.5" />
         </div>
 
         {/* Description — hidden on mobile to save space */}
@@ -177,6 +181,9 @@ export function PanelServiceCard({
             ))}
           </div>
         )}
+
+        {/* Trust highlights — data-driven, never fabricated */}
+        <TrustHighlights items={record.trustHighlights} max={3} />
 
         {/* Included / Excluded — hidden on mobile (shown in detail view) */}
         <div className="hidden grid-cols-1 gap-3 border-t border-[var(--border)] pt-3 sm:grid sm:grid-cols-2">
@@ -201,6 +208,9 @@ export function PanelServiceCard({
             </ul>
           </div>
         </div>
+
+        {/* Package tiers — Basic / Pro / Premium preview from canonical data */}
+        {hasPackages && <PackageTierStrip packages={record.packages ?? []} />}
 
         {/* Actions */}
         <div className="mt-auto flex items-center gap-2 pt-1 sm:pt-1">
@@ -245,7 +255,11 @@ export function PanelServiceCard({
  *
  * NEVER promises guaranteed rank/wins/anti-ban/safety. Scope & effort only.
  * Distinct visual states for CS, BR, package, scheduled, media-rich, no-media,
- * unavailable. Mode chip, floating price plate, light sweep, glass depth.
+ * unavailable. Mode chip, 3-part floating price plate, light sweep, glass depth.
+ *
+ * PROMPT 03 repair: rotating media stage, 3-part price (struck original +
+ * current + SAVE badge via best package), prominent seller, no-guarantee
+ * disclosure lives in the Detail dossier (not the card).
  */
 export function RankPushCard({
   record,
@@ -259,16 +273,17 @@ export function RankPushCard({
   const wa = buildWhatsAppUrl({
     id: record.id,
     title: record.title,
-    price: record.priceInr,
+    price: getStartingPrice(record),
     mode: `${record.mode} Rank Push · ${record.fromRank} → ${record.toRank}`,
     sellerRef: record.sellerRef,
     inquiry: "Interested in this rank-push package. Please share scope & schedule.",
   });
 
-  const { frontImage, frontImageAlt, videoUrl } = resolveListingMedia(record, record.title);
-  const hasRealMedia = !!frontImage;
+  const { frontImage, videoUrl } = resolveListingMedia(record, record.title);
   const isFeatured = !!record.featured && !record.demo;
   const isScheduled = !!record.schedule;
+  const hasPackages = !!(record.packages && record.packages.length > 0);
+  const best = getBestPackage(record);
   const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
   const isFavorite = useFavoritesStore((s) => s.favorites.includes(record.id));
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
@@ -291,74 +306,60 @@ export function RankPushCard({
         className="relative w-full overflow-hidden rounded-t-3xl"
         style={{ height: "clamp(120px, 24vw, 180px)" }}
       >
-        {hasRealMedia && frontImage ? (
-          <button
-            type="button"
-            aria-label={`View images for ${record.title}`}
-            onClick={(e) => { e.preventDefault(); setLightboxOpen(true); }}
-            className="absolute inset-0 z-[1] cursor-pointer"
-          >
-            <img
-              src={frontImage}
-              alt={frontImageAlt}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          </button>
-        ) : (
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{
-              background:
-                record.mode === "CS"
-                  ? "linear-gradient(110deg, oklch(0.74 0.15 196 / 0.32) 0%, oklch(0.82 0.1 200 / 0.2) 50%, oklch(0.9 0.02 245 / 0.5) 100%)"
-                  : "linear-gradient(110deg, oklch(0.6 0.19 290 / 0.3) 0%, oklch(0.7 0.12 290 / 0.2) 50%, oklch(0.9 0.02 245 / 0.5) 100%)",
-            }}
-          />
-        )}
+        <CardMediaStage
+          images={allImages}
+          frontImage={frontImage}
+          title={record.title}
+          fallbackGradient={
+            record.mode === "CS"
+              ? "linear-gradient(110deg, oklch(0.74 0.15 196 / 0.32) 0%, oklch(0.82 0.1 200 / 0.2) 50%, oklch(0.9 0.02 245 / 0.5) 100%)"
+              : "linear-gradient(110deg, oklch(0.6 0.19 290 / 0.3) 0%, oklch(0.7 0.12 290 / 0.2) 50%, oklch(0.9 0.02 245 / 0.5) 100%)"
+          }
+          overlay={
+            <>
+              {/* Luminous progression path — decorative */}
+              <svg aria-hidden className="absolute inset-0 h-full w-full" viewBox="0 0 400 200" fill="none" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id={`path-${record.id}`} x1="0" y1="0.5" x2="1" y2="0.5">
+                    <stop offset="0%" stopColor="oklch(0.74 0.15 196)" stopOpacity="0.7" />
+                    <stop offset="100%" stopColor="oklch(0.6 0.19 290)" stopOpacity="0.7" />
+                  </linearGradient>
+                </defs>
+                <path d="M 40 100 Q 120 60, 200 100 T 360 100" stroke={`url(#path-${record.id})`} strokeWidth="2" strokeDasharray="4 6" fill="none" />
+                <circle cx="40" cy="100" r="6" fill="oklch(0.74 0.15 196 / 0.8)" />
+                <circle cx="40" cy="100" r="12" fill="none" stroke="oklch(0.74 0.15 196 / 0.3)" strokeWidth="1" />
+                <circle cx="200" cy="100" r="5" fill="oklch(1 0 0 / 0.6)" />
+                <circle cx="360" cy="100" r="8" fill="oklch(0.6 0.19 290 / 0.8)" />
+                <circle cx="360" cy="100" r="14" fill="none" stroke="oklch(0.6 0.19 290 / 0.3)" strokeWidth="1" />
+              </svg>
 
-        {/* Luminous progression path — decorative */}
-        <svg aria-hidden className="absolute inset-0 h-full w-full" viewBox="0 0 400 200" fill="none" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id={`path-${record.id}`} x1="0" y1="0.5" x2="1" y2="0.5">
-              <stop offset="0%" stopColor="oklch(0.74 0.15 196)" stopOpacity="0.7" />
-              <stop offset="100%" stopColor="oklch(0.6 0.19 290)" stopOpacity="0.7" />
-            </linearGradient>
-          </defs>
-          <path d="M 40 100 Q 120 60, 200 100 T 360 100" stroke={`url(#path-${record.id})`} strokeWidth="2" strokeDasharray="4 6" fill="none" />
-          <circle cx="40" cy="100" r="6" fill="oklch(0.74 0.15 196 / 0.8)" />
-          <circle cx="40" cy="100" r="12" fill="none" stroke="oklch(0.74 0.15 196 / 0.3)" strokeWidth="1" />
-          <circle cx="200" cy="100" r="5" fill="oklch(1 0 0 / 0.6)" />
-          <circle cx="360" cy="100" r="8" fill="oklch(0.6 0.19 290 / 0.8)" />
-          <circle cx="360" cy="100" r="14" fill="none" stroke="oklch(0.6 0.19 290 / 0.3)" strokeWidth="1" />
-        </svg>
-
-        {/* Floating rank markers — constrained width on mobile */}
-        <div className="absolute inset-0 flex items-center justify-between px-4 sm:px-6">
-          <div className="glass-float min-w-0 max-w-[40%] rounded-lg px-2 py-1 text-center sm:rounded-xl sm:px-3 sm:py-1.5 sm:max-w-none" style={{ boxShadow: "var(--glass-shadow)" }}>
-            <p className="font-mono-label text-[7px] text-[var(--ink-soft)]">FROM</p>
-            <p className="truncate font-heading text-xs font-semibold text-[var(--ink)] sm:text-sm">{record.fromRank}</p>
-          </div>
-          <div className="glass-float min-w-0 max-w-[40%] rounded-lg px-2 py-1 text-center sm:rounded-xl sm:px-3 sm:py-1.5 sm:max-w-none" style={{ boxShadow: "var(--glass-shadow-lift)" }}>
-            <p className="font-mono-label text-[7px] text-[var(--ink-soft)]">TO</p>
-            <p className="truncate font-heading text-xs font-semibold text-gradient-cyan sm:text-sm">{record.toRank}</p>
-          </div>
-        </div>
-
-        {/* Light sweep */}
-        <div aria-hidden className="sheen-sweep absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              {/* Floating rank markers — constrained width on mobile */}
+              <div className="absolute inset-0 flex items-center justify-between px-4 sm:px-6">
+                <div className="glass-float min-w-0 max-w-[40%] rounded-lg px-2 py-1 text-center sm:rounded-xl sm:px-3 sm:py-1.5 sm:max-w-none" style={{ boxShadow: "var(--glass-shadow)" }}>
+                  <p className="font-mono-label text-[7px] text-[var(--ink-soft)]">FROM</p>
+                  <p className="truncate font-heading text-xs font-semibold text-[var(--ink)] sm:text-sm">{record.fromRank}</p>
+                </div>
+                <div className="glass-float min-w-0 max-w-[40%] rounded-lg px-2 py-1 text-center sm:rounded-xl sm:px-3 sm:py-1.5 sm:max-w-none" style={{ boxShadow: "var(--glass-shadow-lift)" }}>
+                  <p className="font-mono-label text-[7px] text-[var(--ink-soft)]">TO</p>
+                  <p className="truncate font-heading text-xs font-semibold text-gradient-cyan sm:text-sm">{record.toRank}</p>
+                </div>
+              </div>
+            </>
+          }
+          onOpenLightbox={() => setLightboxOpen(true)}
+        />
 
         {/* Badges */}
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5 sm:left-4 sm:top-4">
+        <div className="absolute left-3 top-3 z-[2] flex max-w-[calc(100%-5.5rem)] flex-nowrap gap-1.5 overflow-hidden sm:left-4 sm:top-4 sm:max-w-none sm:flex-wrap">
           <StatusChip tone={modeTone} icon={<Trophy className="h-3 w-3" />}>{record.mode} Rank Push</StatusChip>
           {isFeatured && <StatusChip tone="cyan" icon={<Sparkles className="h-3 w-3" />}>Featured</StatusChip>}
           {isScheduled && <StatusChip tone="azure">Scheduled</StatusChip>}
           {isUnavailable && <StatusChip tone="neutral">Unavailable</StatusChip>}
+          {videoUrl && <StatusChip tone="azure" icon={<Play className="h-3 w-3" />}>Demo</StatusChip>}
         </div>
 
         {/* Top-right favorite + compare toggles */}
-        <div className="absolute right-2.5 top-2.5 flex gap-1.5 sm:right-3 sm:top-3">
+        <div className="absolute right-2.5 top-2.5 z-[2] flex gap-1.5 sm:right-3 sm:top-3">
           <button
             type="button"
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -391,10 +392,15 @@ export function RankPushCard({
           </button>
         </div>
 
-        {/* Floating price plate */}
-        <div className="absolute -bottom-px right-3 max-w-[calc(100%-1.5rem)] sm:right-4">
+        {/* Floating price plate — 3-part price (struck original + current + SAVE) */}
+        <div className="absolute -bottom-px right-3 z-[2] max-w-[calc(100%-1.5rem)] sm:right-4">
           <div className="glass-float rounded-xl px-2.5 py-1.5 sm:rounded-2xl sm:px-3 sm:py-2" style={{ boxShadow: "var(--glass-shadow-lift)" }}>
-            <PricePlate value={record.priceInr} size="sm" />
+            <PriceDisplay
+              currentPrice={getStartingPrice(record)}
+              originalPrice={best?.originalPrice}
+              startingFrom={hasPackages}
+              size="sm"
+            />
           </div>
         </div>
       </div>
@@ -404,6 +410,7 @@ export function RankPushCard({
         <div className="min-w-0">
           <h3 className="font-heading text-sm font-semibold leading-tight text-[var(--ink)] sm:text-lg">{record.title}</h3>
           <p className="mt-0.5 font-mono-label text-[9px] text-[var(--ink-soft)] sm:mt-1 sm:text-[10px]">{record.id} · {record.packageTier}</p>
+          <SellerBadge sellerRef={record.sellerRef} showLabel className="mt-1.5" />
         </div>
 
         {/* Description — hidden on mobile to save space */}
@@ -418,6 +425,9 @@ export function RankPushCard({
           </div>
         )}
 
+        {/* Trust highlights — data-driven, never fabricated */}
+        <TrustHighlights items={record.trustHighlights} max={3} />
+
         {/* Schedule (only when real) — hidden on mobile */}
         {isScheduled && (
           <div className="glass-embed hidden items-center gap-2 rounded-xl px-3 py-2 sm:flex">
@@ -426,13 +436,8 @@ export function RankPushCard({
           </div>
         )}
 
-        {/* No-guarantee disclosure — hidden on mobile (shown in detail view) */}
-        <div className="hidden rounded-2xl border border-[oklch(0.7_0.14_45/0.3)] bg-[oklch(0.86_0.1_80/0.18)] p-3 sm:block">
-          <p className="font-mono-label text-[9px] text-[oklch(0.45_0.14_45)]">No guarantee</p>
-          <p className="mt-1 text-xs text-[var(--ink-soft)]">
-            No guaranteed rank, wins, completion, anti-ban or safety. No cheats, exploits or credential access. Scope &amp; effort only.
-          </p>
-        </div>
+        {/* Package tiers — Basic / Pro / Premium preview from canonical data */}
+        {hasPackages && <PackageTierStrip packages={record.packages ?? []} />}
 
         {/* Actions */}
         <div className="mt-auto flex items-center gap-2 pt-1 sm:pt-1">

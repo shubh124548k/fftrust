@@ -9,9 +9,17 @@
 // 7. Price sort on Instagram Views / Followers / Likes.
 // 8. No console errors, no horizontal overflow across widths.
 const puppeteer = require("puppeteer-core");
+const fs = require("fs");
 
 const BASE = "http://localhost:1111";
-const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const CANDIDATE_BROWSERS = [
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+];
+const BROWSER = CANDIDATE_BROWSERS.find((p) => fs.existsSync(p));
+if (!BROWSER) { console.error("No browser found for Puppeteer"); process.exit(1); }
 const WIDTHS = [320, 360, 375, 390, 414, 430, 768, 1024, 1280, 1440, 1920];
 
 let failures = 0;
@@ -26,7 +34,7 @@ function parsePrice(text) {
 }
 
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
+  const browser = await puppeteer.launch({ executablePath: BROWSER, headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
   const page = await browser.newPage();
   const consoleErrors = [];
   page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
@@ -34,7 +42,7 @@ function parsePrice(text) {
 
   // ---- 1. Heart + Compare icons on every card (home) ----
   await page.setViewport({ width: 1440, height: 900 });
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(600);
   const iconState = await page.evaluate(() => {
     const cards = Array.from(document.querySelectorAll("[aria-label^='Account '], [aria-label^='Service '], [aria-label^='Rank push ']"));
@@ -95,7 +103,7 @@ function parsePrice(text) {
   check("Card primary image stays MEDIUM on desktop (≤ 220px, not fullscreen)", deskMedia.length > 0 && deskMedia.every((h) => h >= 80 && h <= 220), JSON.stringify(deskMedia));
 
   await page.setViewport({ width: 375, height: 812 });
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(600);
   const mobMedia = await page.evaluate(() => {
     const imgs = Array.from(document.querySelectorAll("[aria-label^='Account '] img, [aria-label^='Service '] img, [aria-label^='Rank push '] img"));
@@ -105,7 +113,7 @@ function parsePrice(text) {
 
   // ---- 4. Lightbox: open, counter, arrows, thumbnails, keyboard, scroll-lock, ESC ----
   await page.evaluate(() => {
-    const btn = document.querySelector("button[aria-label^='View images']");
+    const btn = document.querySelector("button[aria-label^='View media']");
     btn && btn.click();
   });
   await sleep(400);
@@ -222,10 +230,10 @@ function parsePrice(text) {
 
   // ---- 5. No empty VIDEO tile on cards without videoUrl ----
   await page.setViewport({ width: 1440, height: 900 });
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(500);
   await page.evaluate(() => {
-    const btn = document.querySelector("button[aria-label^='View images']");
+    const btn = document.querySelector("button[aria-label^='View media']");
     btn && btn.click();
   });
   await sleep(350);
@@ -237,9 +245,9 @@ function parsePrice(text) {
   await page.keyboard.press("Escape");
   await sleep(250);
 
-  // ---- 5b. VIDEO option + popup when videoUrl exists (SAMPLE — Starter Vault) ----
+  // ---- 5b. VIDEO option + inline player when videoUrl exists (SAMPLE — Starter Vault) ----
   await page.evaluate(() => {
-    const btn = Array.from(document.querySelectorAll("button[aria-label^='View images']")).find((b) => {
+    const btn = Array.from(document.querySelectorAll("button[aria-label^='View media']")).find((b) => {
       const card = b.closest("[aria-label^='Account ']");
       return card && /Starter Vault/i.test(card.getAttribute("aria-label") || "");
     });
@@ -248,35 +256,31 @@ function parsePrice(text) {
   await sleep(400);
   const videoTile = await page.evaluate(() => {
     const dlg = document.querySelector('[role="dialog"][aria-label*="media gallery"]');
-    return !!Array.from(dlg.querySelectorAll("button")).find((b) => (b.getAttribute("aria-label") || "") === "Open video");
+    return !!Array.from(dlg.querySelectorAll("button")).find((b) => (b.getAttribute("aria-label") || "") === "Play video");
   });
   check("VIDEO option appears when videoUrl exists", videoTile);
 
   await page.evaluate(() => {
     const dlg = document.querySelector('[role="dialog"][aria-label*="media gallery"]');
-    const vb = dlg && Array.from(dlg.querySelectorAll("button")).find((b) => (b.getAttribute("aria-label") || "") === "Open video");
+    const vb = dlg && Array.from(dlg.querySelectorAll("button")).find((b) => (b.getAttribute("aria-label") || "") === "Play video");
     vb && vb.click();
   });
-  await sleep(500);
+  await sleep(600);
   const videoPop = await page.evaluate(() => {
-    const dlg = document.querySelector('[role="dialog"][aria-label*="— video"]');
+    const dlg = document.querySelector('[role="dialog"][aria-label*="media gallery"]');
     if (!dlg) return null;
     const iframe = dlg.querySelector("iframe");
-    return { hasClose: !!Array.from(dlg.querySelectorAll("button")).find((b) => (b.getAttribute("aria-label") || "") === "Close video"), src: iframe ? iframe.getAttribute("src") : null };
+    return { hasClose: !!Array.from(dlg.querySelectorAll("button")).find((b) => (b.getAttribute("aria-label") || "") === "Close gallery"), src: iframe ? iframe.getAttribute("src") : null };
   });
-  check("Video popup opens (premium viewer style)", videoPop !== null);
+  check("Video plays inline in the gallery (premium viewer style)", videoPop !== null);
   check("Video embeds YouTube-nocookie player with NO autoplay param", videoPop && videoPop.src && videoPop.src.includes("youtube-nocookie") && !/autoplay/i.test(videoPop.src), JSON.stringify(videoPop));
-  check("Video popup has a Close button", videoPop && videoPop.hasClose);
+  check("Gallery has a Close button", videoPop && videoPop.hasClose);
 
-  // ESC closes video popup first, then gallery
+  // ESC closes the gallery (video plays inside the same unified viewer)
   await page.keyboard.press("Escape");
   await sleep(300);
-  const videoClosed = await page.evaluate(() => !document.querySelector('[role="dialog"][aria-label*="— video"]'));
-  check("ESC closes video popup", videoClosed);
-  await page.keyboard.press("Escape");
-  await sleep(300);
-  const galleryClosed = await page.evaluate(() => !document.querySelector('[role="dialog"][aria-label*="media gallery"]'));
-  check("ESC closes gallery after video popup", galleryClosed);
+  const galleryClosedAfterVideo = await page.evaluate(() => !document.querySelector('[role="dialog"][aria-label*="media gallery"]'));
+  check("ESC closes gallery after video", galleryClosedAfterVideo);
 
   // ---- 6. Numeric price sort on home Explore (High→Low then Low→High) ----
   const readHomePrices = async () => page.evaluate(() => {
@@ -300,6 +304,8 @@ function parsePrice(text) {
   check("Explore Low→High sort reorders numerically ascending", homeAsc.length > 1 && homeAsc.every((v, i) => i === 0 || homeAsc[i - 1] <= v), JSON.stringify(homeAsc));
 
   // ---- 6b. Panel Seller + Paid Push sort controls exist and sort numerically ----
+  await page.goto(`${BASE}/services`, { waitUntil: "networkidle0", timeout: 60000 });
+  await sleep(500);
   const readPanelPrices = async () => page.evaluate(() => {
     const cards = Array.from(document.querySelectorAll("[aria-label^='Service ']"));
     return cards.map((c) => {

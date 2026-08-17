@@ -63,7 +63,7 @@ export default function NotFound() {
                 Back home
               </Link>
               <Link
-                href="/#explore"
+                href="/accounts"
                 className="inline-flex items-center gap-2 rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent-azure)] hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
               >
                 <Compass className="h-4 w-4" />

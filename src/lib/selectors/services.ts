@@ -18,7 +18,8 @@ import type {
   FeaturedResult,
   PriceBounds,
 } from "@/data/types";
-import { searchBy, sortByKey, withinPrice, discoverDistinct } from "./filter";
+import { searchBy, withinPrice, discoverDistinct } from "./filter";
+import { getStartingPrice } from "@/lib/pricing";
 
 const PANEL_POOL: PanelSellerService[] = [...panelServices, ...samplePanelServices];
 const PUSH_POOL: PaidPushService[] = [...rankPushPackages, ...sampleRankPushPackages];
@@ -69,7 +70,7 @@ export function filterPanelServices(
   f: PanelServiceFilter,
   source?: PanelSellerService[],
 ): PanelSellerService[] {
-  let pool = getPublishedPanelServices(source);
+  let pool = source ?? getPublishedPanelServices();
   if (f.category && f.category !== "all") pool = pool.filter((s) => s.category === f.category);
   if (f.tag) pool = pool.filter((s) => s.tags.includes(f.tag!));
   pool = withinPrice(pool, { minPrice: f.minPrice, maxPrice: f.maxPrice });
@@ -81,21 +82,54 @@ export function sortPanelServices(
   records: PanelSellerService[],
   sort: SortKey,
 ): PanelSellerService[] {
-  return sortByKey(records as (PanelSellerService & { level: number })[], sort) as PanelSellerService[];
+  const copy = [...records];
+  switch (sort) {
+    case "price-asc":
+      return copy.sort((a, b) => getStartingPrice(a) - getStartingPrice(b));
+    case "price-desc":
+      return copy.sort((a, b) => getStartingPrice(b) - getStartingPrice(a));
+    case "newest":
+    default:
+      return copy.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  }
 }
 
 export function getPanelServiceCategories(source?: PanelSellerService[]): ServiceCategory[] {
-  return discoverDistinct(getPublishedPanelServices(source), (s) => s.category);
+  return discoverDistinct(source ?? getPublishedPanelServices(), (s) => s.category);
 }
 
 export function getPanelServiceTags(source?: PanelSellerService[]): string[] {
-  return discoverDistinct(getPublishedPanelServices(source), (s) => s.tags);
+  return discoverDistinct(source ?? getPublishedPanelServices(), (s) => s.tags);
 }
 
 export function getPanelServicePriceBounds(source?: PanelSellerService[]): PriceBounds {
-  const prices = getPublishedPanelServices(source).map((s) => s.priceInr);
+  const pool = source ?? getPublishedPanelServices();
+  const prices = pool.map((s) => s.priceInr);
   if (prices.length === 0) return { min: 0, max: 0, count: 0 };
   return { min: Math.min(...prices), max: Math.max(...prices), count: prices.length };
+}
+
+/** Related panel services by shared category / tags, excluding the source id. */
+export function getRelatedPanelServices(
+  id: string,
+  limit = 4,
+  source?: PanelSellerService[],
+): PanelSellerService[] {
+  const pool = source ?? getPublishedPanelServices();
+  const ref = pool.find((s) => s.id === id);
+  if (!ref) return [];
+  return pool
+    .filter((s) => s.id !== id)
+    .map((s) => {
+      let score = 0;
+      if (s.category === ref.category) score += 3;
+      score += s.tags.filter((t) => ref.tags.includes(t)).length;
+      return { s, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.s);
 }
 
 /* ================ PAID PUSH ================ */
@@ -144,7 +178,7 @@ export function filterRankPushPackages(
   f: RankPushFilter,
   source?: PaidPushService[],
 ): PaidPushService[] {
-  let pool = getPublishedRankPushPackages(source);
+  let pool = source ?? getPublishedRankPushPackages();
   if (f.mode && f.mode !== "all") pool = pool.filter((p) => p.mode === f.mode);
   if (f.tag) pool = pool.filter((p) => p.tags.includes(f.tag!));
   pool = withinPrice(pool, { minPrice: f.minPrice, maxPrice: f.maxPrice });
@@ -156,22 +190,56 @@ export function sortRankPushPackages(
   records: PaidPushService[],
   sort: SortKey,
 ): PaidPushService[] {
-  return sortByKey(records as (PaidPushService & { level: number })[], sort) as PaidPushService[];
+  const copy = [...records];
+  switch (sort) {
+    case "price-asc":
+      return copy.sort((a, b) => getStartingPrice(a) - getStartingPrice(b));
+    case "price-desc":
+      return copy.sort((a, b) => getStartingPrice(b) - getStartingPrice(a));
+    case "newest":
+    default:
+      return copy.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  }
 }
 
 /** CS / BR mode filters are derived — new modes appear automatically. */
 export function getRankPushModes(source?: PaidPushService[]): RankPushMode[] {
-  return discoverDistinct(getPublishedRankPushPackages(source), (p) => p.mode);
+  return discoverDistinct(source ?? getPublishedRankPushPackages(), (p) => p.mode);
 }
 
 export function getRankPushTags(source?: PaidPushService[]): string[] {
-  return discoverDistinct(getPublishedRankPushPackages(source), (p) => p.tags);
+  return discoverDistinct(source ?? getPublishedRankPushPackages(), (p) => p.tags);
 }
 
 export function getRankPushPriceBounds(source?: PaidPushService[]): PriceBounds {
-  const prices = getPublishedRankPushPackages(source).map((p) => p.priceInr);
+  const pool = source ?? getPublishedRankPushPackages();
+  const prices = pool.map((p) => p.priceInr);
   if (prices.length === 0) return { min: 0, max: 0, count: 0 };
   return { min: Math.min(...prices), max: Math.max(...prices), count: prices.length };
+}
+
+/** Related rank-push packages by shared mode / tier / tags, excluding the source id. */
+export function getRelatedRankPush(
+  id: string,
+  limit = 4,
+  source?: PaidPushService[],
+): PaidPushService[] {
+  const pool = source ?? getPublishedRankPushPackages();
+  const ref = pool.find((p) => p.id === id);
+  if (!ref) return [];
+  return pool
+    .filter((p) => p.id !== id)
+    .map((p) => {
+      let score = 0;
+      if (p.mode === ref.mode) score += 3;
+      if (p.packageTier === ref.packageTier) score += 1;
+      score += p.tags.filter((t) => ref.tags.includes(t)).length;
+      return { p, score };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((x) => x.p);
 }
 
 /* ================ AGGREGATE ================ */

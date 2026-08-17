@@ -1,15 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, Server, Sparkles } from "lucide-react";
+import { ChevronDown, Server, Sparkles, Search, X } from "lucide-react";
 import { PanelServiceCard } from "@/components/visual/service-card";
 import { EmptyState } from "@/components/visual/empty-state";
 import { StatusChip } from "@/components/visual/status-chip";
 import { RevealText } from "@/components/visual/reveal-text";
+import { SampleNoticeBanner } from "@/components/visual/sample-notice-banner";
 import { DataCube, ControllerGeometry } from "@/components/visual/objects";
 import { ParallaxLayer } from "@/components/visual/parallax-layer";
 import {
   getFeaturedPanelServices,
+  filterPanelServices,
   sortPanelServices,
 } from "@/lib/selectors/services";
 import { buildRotationWindows } from "@/lib/rotation";
@@ -17,12 +19,14 @@ import { useAutoRotation } from "@/hooks/use-auto-rotation";
 import { useServiceDetailStore } from "@/stores/service-detail";
 import { cn } from "@/lib/utils";
 import type { SortKey } from "@/data/types";
+import { PRICE_SORT_OPTIONS } from "@/lib/design/constants";
 
 /**
  * FF TRUST — Panel Seller Showroom (dark-only, simplified).
  *
  * Clean listing experience:
- *  - NO search bar
+ *  - lightweight search input (filters the showroom pool via the canonical
+ *    search selector — empty results are honest, never fake)
  *  - NO filter panel
  *  - Only two sort options: Price High→Low, Price Low→High
  *  - Gallery grid with premium Holo-Chrome cards
@@ -34,21 +38,22 @@ import type { SortKey } from "@/data/types";
  * automatically updates this showroom — no manual page editing required.
  */
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "price-desc", label: "Price · High to Low" },
-  { value: "price-asc", label: "Price · Low to High" },
-];
+const SORT_OPTIONS = PRICE_SORT_OPTIONS as { value: SortKey; label: string }[];
 
 export function PanelSellerShowroom({ rotate = false }: { rotate?: boolean }) {
   const featured = getFeaturedPanelServices(12);
   const [sort, setSort] = React.useState<SortKey>("price-desc");
+  const [query, setQuery] = React.useState("");
   const openDetail = useServiceDetailStore((s) => s.open);
 
-  // Results are always the featured pool, sorted by the selected key.
-  const results = React.useMemo(
-    () => sortPanelServices(featured.records, sort),
-    [featured.records, sort],
-  );
+  // Results are the showroom pool (search-filtered when a query is entered),
+  // sorted by the selected key.
+  const results = React.useMemo(() => {
+    const pool = query.trim()
+      ? filterPanelServices({ search: query }, featured.records)
+      : featured.records;
+    return sortPanelServices(pool, sort);
+  }, [query, featured.records, sort]);
 
   // PROMPT 3 — homepage rotation: sliding window (size 3, step 1, wrap).
   const pages = React.useMemo(() => buildRotationWindows(results), [results]);
@@ -85,16 +90,43 @@ export function PanelSellerShowroom({ rotate = false }: { rotate?: boolean }) {
         </div>
       </div>
 
-      {/* Compact controls — results count + sort only */}
+      {/* SAMPLE frame — honest label when showing demo fixtures */}
+      {featured.isSample && <SampleNoticeBanner />}
+
+      {/* Compact controls — results count + search + sort */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <StatusChip tone="neutral">{results.length} {results.length === 1 ? "result" : "results"}</StatusChip>
         </div>
-        <div className="relative min-w-0">
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort services" className="glass-embed w-full appearance-none rounded-full py-2 pl-3 pr-8 text-xs text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:py-2.5 sm:pl-4 sm:pr-9 sm:text-sm">
-            {SORT_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
-          </select>
-          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-soft)] sm:right-3" />
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Search input — filters the showroom pool */}
+          <div className="relative min-w-[9rem]">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-soft)]" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search services…"
+              aria-label="Search services"
+              className="glass-embed w-full appearance-none rounded-full py-2 pl-8 pr-7 text-xs text-[var(--ink)] placeholder:text-[var(--ink-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:py-2.5 sm:pl-9 sm:text-sm"
+            />
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => setQuery("")}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="relative min-w-0">
+            <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="Sort services" className="glass-embed w-full appearance-none rounded-full py-2 pl-3 pr-8 text-xs text-[var(--ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:py-2.5 sm:pl-4 sm:pr-9 sm:text-sm">
+              {SORT_OPTIONS.map((o) => (<option key={o.value} value={o.value}>{o.label}</option>))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-soft)] sm:right-3" />
+          </div>
         </div>
       </div>
 

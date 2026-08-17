@@ -6,27 +6,28 @@ import { cn } from "@/lib/utils";
 import type { ListingMedia } from "@/data/types";
 import { usePerformanceTier } from "@/lib/design/use-performance-tier";
 import { SafeVideo } from "@/components/visual/safe-video";
+import { DECORATIVE_GRADIENT } from "@/lib/design/constants";
 
 /**
- * FF TRUST — Media Gallery (PROMPT 07).
+ * FF TRUST — Media Gallery (PROMPT 03 unified sequence).
  *
- * A large media stage with:
+ * A large media stage that treats images AND video as ONE navigable sequence:
+ *  - every canonical media item (images + video) shares prev/next navigation,
+ *    the thumbnail rail, the slide counter and the fullscreen lightbox
+ *  - video items render through the single reusable SafeVideo renderer
+ *    (never autoplays, muted, lazy, poster-aware) — nothing loads until the
+ *    visitor actually navigates to it
  *  - up to 30 real images (lazy-loaded, reserved aspect, broken-media fallback)
- *  - thumbnail rail (click to select, scrollable)
+ *  - thumbnail rail (click to select, scrollable) — video tiles show a play
+ *    glyph so the sequence reads as one continuous collection
  *  - touch swipe (pointer events, transform-only)
- *  - lightbox (fullscreen overlay, keyboard nav)
+ *  - lightbox (fullscreen overlay, keyboard nav) that can also show video
  *  - keyboard navigation (← → for prev/next, Escape to close lightbox)
- *  - canonical `videoUrl` media rendered BELOW the image gallery via the
- *    single reusable SafeVideo component (no video loads until the detail
- *    view opens)
  *  - no-media decorative state (crystalline gradient + motif)
  *
- * Tier-aware: swipe parallax reduced on low tiers. Reduced-motion: no swipe
- * animation, direct selection. All decorative layers pointer-events-none.
+ * Tier-aware: swipe/directional animation reduced on low tiers. Reduced-motion:
+ * no swipe animation, direct selection. All decorative layers pointer-events-none.
  */
-
-const DECORATIVE_GRADIENT =
-  "linear-gradient(135deg, oklch(0.82 0.1 200 / 0.35) 0%, oklch(0.7 0.12 290 / 0.22) 50%, oklch(0.9 0.02 245 / 0.5) 100%)";
 
 export function MediaGallery({ media, title }: { media: ListingMedia[]; title: string }) {
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -34,22 +35,29 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
   const [brokenUrls, setBrokenUrls] = React.useState<Set<number>>(new Set());
   const tier = usePerformanceTier();
 
-  const images = media.filter((m) => m.kind === "image");
-  const videos = media.filter((m) => m.kind === "video");
-  const hasImages = images.length > 0;
-  const active = images[Math.min(activeIndex, images.length - 1)];
+  // Unified sequence — every canonical media item (image + video) is part of
+  // the same navigable collection. Video entries always survive the image cap.
+  const items = React.useMemo(
+    () => media.filter((m) => m.kind === "image" || m.kind === "video"),
+    [media],
+  );
+  const hasImages = items.some((m) => m.kind === "image");
+  const hasItems = items.length > 0;
+  const active = items[Math.min(activeIndex, items.length - 1)];
 
   const touchStartX = React.useRef<number | null>(null);
   const touchDelta = React.useRef(0);
-  const directionRef = React.useRef<"next" | "prev">("next");
+  const [direction, setDirection] = React.useState<"next" | "prev">("next");
+  // Low tiers get a simpler transition — no directional slide animation.
+  const animate = tier > 0;
 
   const goNext = React.useCallback(() => {
-    directionRef.current = "next";
-    setActiveIndex((i) => Math.min(i + 1, images.length - 1));
-  }, [images.length]);
+    setDirection("next");
+    setActiveIndex((i) => Math.min(i + 1, items.length - 1));
+  }, [items.length]);
 
   const goPrev = React.useCallback(() => {
-    directionRef.current = "prev";
+    setDirection("prev");
     setActiveIndex((i) => Math.max(i - 1, 0));
   }, []);
 
@@ -97,8 +105,10 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {hasImages && active ? (
-          brokenUrls.has(activeIndex) ? (
+        {hasItems && active ? (
+          active.kind === "video" ? (
+            <SafeVideo url={active.url} title={title} poster={hasImages ? items.find((m) => m.kind === "image")?.url : undefined} fill />
+          ) : brokenUrls.has(activeIndex) ? (
             <BrokenMediaState />
           ) : (
             <img
@@ -108,7 +118,7 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
               loading="lazy"
               className={cn(
                 "absolute inset-0 h-full w-full object-contain",
-                directionRef.current === "next" ? "media-enter-right" : "media-enter-left",
+                animate && (direction === "next" ? "media-enter-right" : "media-enter-left"),
               )}
               onError={() => markBroken(activeIndex)}
             />
@@ -117,13 +127,13 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
           <NoMediaState />
         )}
 
-        {hasImages && active?.evidence && (
+        {hasItems && active?.evidence && (
           <span className="absolute left-3 top-3 rounded-full bg-[oklch(0.55_0.14_160/0.85)] px-2.5 py-1 font-mono-label text-[8px] text-white">
             Evidence
           </span>
         )}
 
-        {images.length > 1 && (
+        {items.length > 1 && (
           <>
             <button
               type="button"
@@ -138,7 +148,7 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
               type="button"
               aria-label="Next media"
               onClick={goNext}
-              disabled={activeIndex >= images.length - 1}
+              disabled={activeIndex >= items.length - 1}
               className="glass-embed absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-[var(--ink)] transition-opacity disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
             >
               <ChevronRight className="h-4 w-4" />
@@ -146,7 +156,7 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
           </>
         )}
 
-        {hasImages && (
+        {hasItems && (
           <button
             type="button"
             aria-label="Open fullscreen"
@@ -157,21 +167,21 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
           </button>
         )}
 
-        {images.length > 1 && (
+        {items.length > 1 && (
           <span className="absolute bottom-3 right-3 rounded-full bg-[oklch(0.16_0.012_255/0.6)] px-2.5 py-1 font-mono-label text-[8px] text-white backdrop-blur-sm">
-            {activeIndex + 1} / {images.length}
+            {activeIndex + 1} / {items.length}
           </span>
         )}
       </div>
 
-      {/* Thumbnail rail — images only */}
-      {images.length > 1 && (
+      {/* Thumbnail rail — one sequence: images + video tiles */}
+      {items.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]">
-          {images.map((m, i) => (
+          {items.map((m, i) => (
             <button
-              key={i}
+              key={`${m.url}-${i}`}
               type="button"
-              aria-label={`View media ${i + 1}`}
+              aria-label={m.kind === "video" ? `Play video ${i + 1}` : `View media ${i + 1}`}
               aria-current={i === activeIndex}
               onClick={() => setActiveIndex(i)}
               className={cn(
@@ -181,7 +191,12 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
                   : "border-transparent opacity-60 hover:opacity-100",
               )}
             >
-              {brokenUrls.has(i) ? (
+              {m.kind === "video" ? (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-0.5" style={{ background: DECORATIVE_GRADIENT }}>
+                  <Play className="h-3.5 w-3.5 text-[var(--accent-azure)]" />
+                  <span className="font-mono-label text-[7px] text-[var(--ink-soft)]">VIDEO</span>
+                </div>
+              ) : brokenUrls.has(i) ? (
                 <div className="flex h-full w-full items-center justify-center" style={{ background: DECORATIVE_GRADIENT }}>
                   <ImageOff className="h-4 w-4 text-[var(--ink-soft)]" />
                 </div>
@@ -199,37 +214,10 @@ export function MediaGallery({ media, title }: { media: ListingMedia[]; title: s
         </div>
       )}
 
-      {/* Video section — canonical videoUrl renders BELOW the image gallery.
-          Only mounted when a video exists in the canonical media list, so no
-          video is ever loaded until the detail view is opened. */}
-      {videos.length > 0 && (
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-center gap-2">
-            <Play className="h-3.5 w-3.5 text-[var(--accent-azure)]" />
-            <p className="font-mono-label text-[9px] text-[var(--accent-azure)]">Video</p>
-            {videos.some((v) => v.evidence) && (
-              <span className="rounded-full bg-[oklch(0.55_0.14_160/0.85)] px-2 py-0.5 font-mono-label text-[8px] text-white">
-                Evidence
-              </span>
-            )}
-          </div>
-          <div className="flex flex-col gap-4">
-            {videos.map((v, i) => (
-              <SafeVideo
-                key={`${v.url}-${i}`}
-                url={v.url}
-                title={title}
-                poster={hasImages ? images[0].url : v.alt}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Lightbox — images only */}
-      {lightboxOpen && hasImages && (
+      {/* Lightbox — the same unified sequence (images + video) fullscreen */}
+      {lightboxOpen && hasItems && (
         <Lightbox
-          media={images}
+          items={items}
           title={title}
           activeIndex={activeIndex}
           setActiveIndex={setActiveIndex}
@@ -267,7 +255,7 @@ function BrokenMediaState() {
 }
 
 function Lightbox({
-  media,
+  items,
   title,
   activeIndex,
   setActiveIndex,
@@ -275,7 +263,7 @@ function Lightbox({
   brokenUrls,
   markBroken,
 }: {
-  media: ListingMedia[];
+  items: ListingMedia[];
   title: string;
   activeIndex: number;
   setActiveIndex: React.Dispatch<React.SetStateAction<number>>;
@@ -283,7 +271,8 @@ function Lightbox({
   brokenUrls: Set<number>;
   markBroken: (i: number) => void;
 }) {
-  const active = media[activeIndex];
+  const active = items[activeIndex];
+  const isVideo = active?.kind === "video";
   React.useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -308,7 +297,7 @@ function Lightbox({
       >
         <X className="h-5 w-5" />
       </button>
-      {media.length > 1 && (
+      {items.length > 1 && (
         <>
           <button
             type="button"
@@ -327,9 +316,9 @@ function Lightbox({
             aria-label="Next"
             onClick={(e) => {
               e.stopPropagation();
-              setActiveIndex((i) => Math.min(i + 1, media.length - 1));
+              setActiveIndex((i) => Math.min(i + 1, items.length - 1));
             }}
-            disabled={activeIndex >= media.length - 1}
+            disabled={activeIndex >= items.length - 1}
             className="glass-embed absolute right-5 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-white transition-opacity disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
           >
             <ChevronRight className="h-5 w-5" />
@@ -337,7 +326,14 @@ function Lightbox({
         </>
       )}
       <div className="max-h-[85vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
-        {brokenUrls.has(activeIndex) ? (
+        {isVideo ? (
+          <div
+            className="holo-border relative overflow-hidden rounded-2xl"
+            style={{ width: "min(90vw, 900px)", aspectRatio: "16 / 9", maxHeight: "80vh" }}
+          >
+            <SafeVideo url={active.url} title={title} fill />
+          </div>
+        ) : brokenUrls.has(activeIndex) ? (
           <div className="flex h-[60vh] w-[80vw] items-center justify-center rounded-2xl" style={{ background: DECORATIVE_GRADIENT }}>
             <ImageOff className="h-10 w-10 text-white opacity-40" />
           </div>
@@ -351,7 +347,7 @@ function Lightbox({
         )}
       </div>
       <span className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-[oklch(0.16_0.012_255/0.7)] px-3 py-1.5 font-mono-label text-[9px] text-white backdrop-blur-sm">
-        {activeIndex + 1} / {media.length} · Escape to close
+        {activeIndex + 1} / {items.length} · Escape to close
       </span>
     </div>
   );

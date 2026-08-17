@@ -8,6 +8,7 @@ import {
   Heart,
   MessageCircle,
   ChevronDown,
+  Compass,
   Eye,
   Users,
   Instagram as InstagramIcon,
@@ -56,8 +57,7 @@ export function SiteHeader() {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
     const sections = [
-      "top", "explore", "price-guide", "list-account",
-      "panel-seller", "paid-push",
+      "top", "price-guide", "list-account",
       "trust", "buyer-safety", "safety-academy", "scam-center",
       "compare", "faq", "about", "legal",
     ];
@@ -115,6 +115,7 @@ export function SiteHeader() {
 
   // Icon map for Instagram sub-items
   const igIcons: Record<string, React.ReactNode> = {
+    "instagram-overview": <Compass className="h-3.5 w-3.5" />,
     "instagram-views": <Eye className="h-3.5 w-3.5" />,
     "instagram-followers": <Users className="h-3.5 w-3.5" />,
     "instagram-likes": <Heart className="h-3.5 w-3.5" />,

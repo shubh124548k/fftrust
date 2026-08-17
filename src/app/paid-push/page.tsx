@@ -19,9 +19,9 @@ export default function PaidPushPage() {
   return (
     <main className="relative pt-28 pb-20 sm:pt-32">
       <div className="container-wide">
-        <Breadcrumbs items={[{ label: "Catalogue" }, { label: "Paid Push" }]} />
+        <Breadcrumbs items={[{ label: "Marketplace" }, { label: "Paid Push" }]} />
         <Link
-          href="/#paid-push"
+          href="/#category-hub"
           className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -47,7 +47,7 @@ export default function PaidPushPage() {
       <BreadcrumbListJsonLd
         items={[
           { name: "Home", path: "/" },
-          { name: "Catalogue", path: "/#paid-push" },
+          { name: "Marketplace", path: "/#category-hub" },
           { name: "Paid Push", path: "/paid-push" },
         ]}
       />

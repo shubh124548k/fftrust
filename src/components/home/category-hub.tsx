@@ -1,190 +1,153 @@
-"use client";
-
-import Link from "next/link";
 import {
   Compass,
+  Zap,
+  Instagram as InstagramIcon,
   Server,
   Trophy,
-  Instagram,
-  ArrowRight,
   Eye,
   Users,
   Heart,
+  Play,
 } from "lucide-react";
 import { SectionHeading } from "@/components/visual/section-heading";
-import { StatusChip } from "@/components/visual/status-chip";
+import { CategoryCard } from "@/components/visual/category-card";
 import { getHomepageCatalogueStats } from "@/lib/selectors/catalogue";
+import {
+  getViewsService,
+  getFollowersService,
+  getLikesService,
+  getViewsPackages,
+  getFollowersPackages,
+  getLikesPackages,
+  formatPrice,
+} from "@/lib/selectors/instagram";
 
 /**
- * FF TRUST — Homepage Category Hub (PROMPT 1).
+ * FF TRUST — Homepage Category Hub (PROMPT 2).
  *
- * Four premium category-navigation cards: Free Fire Accounts, Panel & Services,
- * Paid Push — CS / BR and Instagram Services. Each card is DATA-AWARE — the
- * counts come from the shared `getHomepageCatalogueStats()` helper (canonical
- * production records only), never hardcoded. Adding/removing a canonical
- * record updates every card automatically.
+ * Three clearly separated primary marketplaces, built on ONE reusable
+ * CategoryCard:
+ *   🎮 FREE FIRE          → account marketplace (/accounts)
+ *   ⚡ PANELS & SERVICES   → first layer separates PANEL SELLER (/services)
+ *                            and PAID PUSH (/paid-push) — no invented
+ *                            subcategories
+ *   📱 SOCIAL MEDIA        → real Instagram service types (Views / Followers /
+ *                            Likes) from canonical data + 🔒 YouTube
+ *                            COMING SOON (locked, never a fake link)
  *
- * The Instagram card uses a semantic three-option control (real Links) instead
- * of a decorative clickable container, so it stays keyboard/touch accessible.
+ * Every count is data-driven via `getHomepageCatalogueStats()` and the
+ * canonical Instagram selectors — never hardcoded. Adding/removing a canonical
+ * record updates every card automatically. YouTube renders as a transparent
+ * locked row so the gateway never implies a product that does not exist.
  */
-
-const instagramOptions = [
-  { key: "views", label: "Views", href: "/instagram/views", icon: <Eye className="h-3.5 w-3.5" /> },
-  { key: "followers", label: "Followers", href: "/instagram/followers", icon: <Users className="h-3.5 w-3.5" /> },
-  { key: "likes", label: "Likes", href: "/instagram/likes", icon: <Heart className="h-3.5 w-3.5" /> },
-];
-
-const cardClass =
-  "glass-stack acrylic-sheen group relative flex flex-col gap-5 overflow-hidden rounded-2xl p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[var(--glass-shadow-lift)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]";
 
 export function CategoryHub() {
   const stats = getHomepageCatalogueStats();
+
+  const viewsLabel = getViewsService().label;
+  const followersLabel = getFollowersService().label;
+  const likesLabel = getLikesService().label;
+
+  const cheapest = (packages: { discountPrice: number }[]) =>
+    packages.length > 0 ? `From ${formatPrice(Math.min(...packages.map((p) => p.discountPrice)))}` : "Browse";
 
   return (
     <section id="category-hub" aria-labelledby="category-hub-title" className="section-ff relative">
       <div className="container-wide">
         <SectionHeading
           overline="01 — Browse"
-          title="Four ways to"
-          italic="explore"
-          support="Jump straight to a marketplace category. Every count below is derived from the canonical production catalogue — never hardcoded."
+          title="Three marketplaces,"
+          italic="one trust standard"
+          support="Free Fire accounts, panels & services, and social media — cleanly separated so you always know where you are. Every count below is derived from the canonical production catalogue — never hardcoded."
           id="category-hub-title"
         />
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {/* Free Fire Accounts */}
-          <Link
+        <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {/* 🎮 FREE FIRE — whole-card link to the account marketplace */}
+          <CategoryCard
+            icon={<Compass className="h-5 w-5" />}
+            tone="azure"
+            title="Free Fire Accounts"
+            description="Real account listings with honest evidence metadata — browse, compare and inquire."
+            count={stats.realAccounts}
+            countLabel="real accounts"
             href="/accounts"
-            aria-label="Browse the Free Fire accounts catalogue"
-            className={cardClass}
-          >
-            <div className="flex items-center justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[oklch(0.82_0.1_200/0.16)] text-[var(--accent-azure)]">
-                <Compass className="h-5 w-5" />
-              </span>
-              <CountPill value={stats.realAccounts} label="real accounts" />
-            </div>
-            <div>
-              <h3 className="font-heading text-xl font-semibold text-[var(--ink)]">Free Fire Accounts</h3>
-              <p className="mt-1 text-sm text-[var(--ink-soft)] text-pretty">
-                Real account listings with honest evidence metadata.
-              </p>
-            </div>
-            <div className="mt-auto flex items-center justify-between pt-2">
-              <span className="font-mono-label text-[8px] text-[var(--ink-soft)]">Data-driven</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--ink-soft)] transition-colors group-hover:text-[var(--accent-azure)]">
-                View Accounts
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
-            </div>
-          </Link>
+            ctaLabel="Browse Accounts"
+            ariaLabel="Browse the Free Fire accounts marketplace"
+          />
 
-          {/* Panel & Services */}
-          <Link
+          {/* ⚡ PANELS & SERVICES — first layer separates Panel Seller + Paid Push */}
+          <CategoryCard
+            icon={<Zap className="h-5 w-5" />}
+            tone="violet"
+            title="Panels & Services"
+            description="Panel-seller services and paid-push rank packages — two dedicated marketplaces, clearly separated."
+            count={stats.realServices}
+            countLabel="real services"
             href="/services"
-            aria-label="Browse the panel and services catalogue"
-            className={cardClass}
-          >
-            <div className="flex items-center justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[oklch(0.7_0.12_290/0.16)] text-[var(--accent-violet)]">
-                <Server className="h-5 w-5" />
-              </span>
-              <CountPill value={stats.realPanelServices} label="real services" />
-            </div>
-            <div>
-              <h3 className="font-heading text-xl font-semibold text-[var(--ink)]">Panel &amp; Services</h3>
-              <p className="mt-1 text-sm text-[var(--ink-soft)] text-pretty">
-                Panel, top-up and care services from real sellers.
-              </p>
-            </div>
-            <div className="mt-auto flex items-center justify-between pt-2">
-              <span className="font-mono-label text-[8px] text-[var(--ink-soft)]">Data-driven</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--ink-soft)] transition-colors group-hover:text-[var(--accent-azure)]">
-                View Services
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
-            </div>
-          </Link>
+            ctaLabel="Open Marketplace"
+            ariaLabel="Open the panels and services marketplace"
+            subItems={[
+              {
+                key: "panel-seller",
+                label: "PANEL SELLER",
+                href: "/services",
+                icon: <Server className="h-3.5 w-3.5" />,
+                hint: `${stats.realPanelServices} real services`,
+              },
+              {
+                key: "paid-push",
+                label: "PAID PUSH",
+                href: "/paid-push",
+                icon: <Trophy className="h-3.5 w-3.5" />,
+                hint: `${stats.realPaidPushPackages} real packages`,
+              },
+            ]}
+          />
 
-          {/* Paid Push — CS / BR */}
-          <Link
-            href="/paid-push"
-            aria-label="Browse the paid push packages catalogue"
-            className={cardClass}
-          >
-            <div className="flex items-center justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[oklch(0.74_0.15_196/0.16)] text-[var(--accent-cyan)]">
-                <Trophy className="h-5 w-5" />
-              </span>
-              <CountPill value={stats.realPaidPushPackages} label="real packages" />
-            </div>
-            <div>
-              <h3 className="font-heading text-xl font-semibold text-[var(--ink)]">Paid Push — CS / BR</h3>
-              <p className="mt-1 text-sm text-[var(--ink-soft)] text-pretty">
-                Rank-push packages — scope and effort, no fake guarantees.
-              </p>
-            </div>
-            <div className="mt-auto flex items-center justify-between pt-2">
-              <span className="font-mono-label text-[8px] text-[var(--ink-soft)]">Data-driven</span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--ink-soft)] transition-colors group-hover:text-[var(--accent-azure)]">
-                View Packages
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
-            </div>
-          </Link>
-
-          {/* Instagram Services — semantic three-option control */}
-          <div className={cardClass}>
-            <div className="flex items-center justify-between">
-              <span
-                className="flex h-11 w-11 items-center justify-center rounded-2xl text-[var(--accent-azure)]"
-                style={{
-                  background: "linear-gradient(135deg, oklch(0.82 0.1 200 / 0.2), oklch(0.7 0.12 290 / 0.2))",
-                }}
-              >
-                <Instagram className="h-5 w-5" />
-              </span>
-              <StatusChip tone="neutral">100% Real</StatusChip>
-            </div>
-            <div>
-              <h3 className="font-heading text-xl font-semibold text-[var(--ink)]">Instagram Services</h3>
-              <p className="mt-1 text-sm text-[var(--ink-soft)] text-pretty">
-                Views, followers and likes — real engagement, very low cost.
-              </p>
-            </div>
-            <div role="group" aria-label="Choose an Instagram service" className="grid grid-cols-3 gap-1.5">
-              {instagramOptions.map((o) => (
-                <Link
-                  key={o.key}
-                  href={o.href}
-                  aria-label={`Open Instagram ${o.label}`}
-                  className="glass-embed flex flex-col items-center gap-1.5 rounded-xl px-1 py-2.5 text-center transition-all hover:shadow-[var(--neon-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
-                >
-                  <span className="text-[var(--accent-azure)]">{o.icon}</span>
-                  <span className="font-mono-label text-[8px] text-[var(--ink)]">{o.label}</span>
-                </Link>
-              ))}
-            </div>
-            <div className="mt-auto rounded-xl border border-[var(--border)] p-3 text-center">
-              <span className="block font-mono-label text-[9px] font-semibold text-[var(--accent-azure)]">
-                VERY LOW COST
-              </span>
-              <span className="block font-mono-label text-[8px] text-[var(--ink-soft)]">
-                Views • Followers • Likes
-              </span>
-            </div>
-          </div>
+          {/* 📱 SOCIAL MEDIA — real Instagram service types + YouTube locked */}
+          <CategoryCard
+            icon={<InstagramIcon className="h-5 w-5" />}
+            tone="cyan"
+            title="Social Media"
+            description="Instagram growth at very low cost — with YouTube arriving soon."
+            count={stats.realInstagramPackages}
+            countLabel="packages live"
+            href="/instagram"
+            ctaLabel="Browse Instagram"
+            ariaLabel="Open the social media marketplace"
+            subItems={[
+              {
+                key: "instagram-views",
+                label: viewsLabel,
+                href: "/instagram/views",
+                icon: <Eye className="h-3.5 w-3.5" />,
+                hint: cheapest(getViewsPackages()),
+              },
+              {
+                key: "instagram-followers",
+                label: followersLabel,
+                href: "/instagram/followers",
+                icon: <Users className="h-3.5 w-3.5" />,
+                hint: cheapest(getFollowersPackages()),
+              },
+              {
+                key: "instagram-likes",
+                label: likesLabel,
+                href: "/instagram/likes",
+                icon: <Heart className="h-3.5 w-3.5" />,
+                hint: cheapest(getLikesPackages()),
+              },
+              {
+                key: "youtube",
+                label: "YouTube",
+                icon: <Play className="h-3.5 w-3.5" />,
+                comingSoon: true,
+              },
+            ]}
+          />
         </div>
       </div>
     </section>
-  );
-}
-
-function CountPill({ value, label }: { value: number; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[oklch(1_0_0/0.03)] px-3 py-1.5">
-      <span className="font-heading text-base font-semibold leading-none text-[var(--ink)]">{value}</span>
-      <span className="font-mono-label text-[8px] leading-none text-[var(--ink-soft)]">{label}</span>
-    </span>
   );
 }

@@ -22,7 +22,6 @@ export function FollowersClientPage() {
       packages={packages}
       heroIcon={<Users className="h-5 w-5 text-white" />}
       heroWord="Followers"
-      cardLabel="FOLLOWERS"
     />
   );
 }

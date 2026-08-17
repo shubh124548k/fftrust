@@ -77,6 +77,14 @@ export function MobileCommandCenter({
   const pathname = usePathname();
   const [instagramExpanded, setInstagramExpanded] = React.useState(false);
 
+  // Auto-expand Instagram when navigating to an Instagram page. Derived during
+  // render so no synchronous state updates run inside an effect.
+  const [prevPathname, setPrevPathname] = React.useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    if (pathname.startsWith("/instagram")) setInstagramExpanded(true);
+  }
+
   React.useEffect(() => {
     if (!open) return;
     lockBodyScroll(panelRef);
@@ -112,11 +120,6 @@ export function MobileCommandCenter({
     };
   }, [open, onClose]);
 
-  // Auto-expand Instagram if on an Instagram page
-  React.useEffect(() => {
-    if (pathname.startsWith("/instagram")) setInstagramExpanded(true);
-  }, [pathname]);
-
   if (!open) return null;
 
   const isPathActive = (href: string) => {
@@ -130,6 +133,7 @@ export function MobileCommandCenter({
   const servicesItems = servicesNav;
 
   const igIcons: Record<string, React.ReactNode> = {
+    "instagram-overview": <Compass className="h-4 w-4" />,
     "instagram-views": <Eye className="h-4 w-4" />,
     "instagram-followers": <Users className="h-4 w-4" />,
     "instagram-likes": <Heart className="h-4 w-4" />,

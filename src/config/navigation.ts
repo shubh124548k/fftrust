@@ -7,7 +7,7 @@
  * automatically — no per-component edits (future-proofing contract).
  */
 
-import { modules } from "@/data/modules";
+import { getLiveModules } from "@/lib/selectors/modules";
 import type { ModuleDefinition, ModuleStatus } from "@/data/types";
 
 export type NavItem = {
@@ -34,10 +34,7 @@ function toNavItem(m: ModuleDefinition): NavItem {
   };
 }
 
-const liveSorted = modules
-  .filter((m) => m.status === "live")
-  .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-  .map(toNavItem);
+const liveSorted = getLiveModules().map(toNavItem);
 
 /** Primary top-level links (desktop bar). */
 export const primaryNav: NavItem[] = liveSorted.filter((n) => n.surface === "primary");
@@ -52,17 +49,25 @@ export const wishlistNav: NavItem = {
   surface: "primary",
 };
 
-/** Instagram nav item — dropdown with Views, Followers, Likes sub-items. */
+/** Instagram nav item — parent hub /instagram with Views, Followers, Likes sub-items. */
 export const instagramNav: NavItem = {
   key: "instagram",
   label: "Instagram",
-  href: "/instagram/views",
+  href: "/instagram",
   description: "Instagram growth services",
   iconKey: "Instagram",
   surface: "primary",
 };
 
 export const instagramSubNav: NavItem[] = [
+  {
+    key: "instagram-overview",
+    label: "Overview",
+    href: "/instagram",
+    description: "All Instagram services in one hub",
+    iconKey: "Instagram",
+    surface: "primary" as ModuleDefinition["surface"],
+  },
   {
     key: "instagram-views",
     label: "Views",

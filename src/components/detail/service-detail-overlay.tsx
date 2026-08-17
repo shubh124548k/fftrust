@@ -1,18 +1,29 @@
 "use client";
 
 import * as React from "react";
-import { X, Check, Layers, FileText, User, MessageCircle, ShieldCheck, Trophy } from "lucide-react";
+import { X, Check, Layers, FileText, User, MessageCircle, ShieldCheck, Trophy, Heart, Columns3 } from "lucide-react";
 import { GlassPanel } from "@/components/visual/glass-panel";
-import { StatusChip, PricePlate, EvidenceChip } from "@/components/visual/status-chip";
+import { StatusChip, EvidenceChip } from "@/components/visual/status-chip";
+import { TrustHighlights } from "@/components/visual/trust-highlights";
+import { PriceDisplay } from "@/components/visual/price-display";
+import { SellerBadge } from "@/components/visual/seller-badge";
 import { MagneticButton } from "@/components/visual/magnetic-button";
 import { MediaGallery } from "@/components/detail/media-gallery";
+import { MobileStickyCTA } from "./mobile-sticky-cta";
 import { BuyerProofPanel } from "@/components/proof/buyer-proof-panel";
 import { useServiceDetailStore } from "@/stores/service-detail";
-import { getPanelServiceById, getRankPushById } from "@/lib/selectors/services";
+import { useFavoritesStore } from "@/stores/favorites";
+import type { ListingType } from "@/stores/favorites";
+import { getPanelServiceById, getRankPushById, getRelatedPanelServices, getRelatedRankPush } from "@/lib/selectors/services";
 import { toListingMediaList } from "@/lib/media";
+import { getStartingPrice, getBestPackage } from "@/lib/pricing";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { siteConfig } from "@/config/site";
 import { z } from "@/lib/design/depth";
+import { cn } from "@/lib/utils";
+import { PanelServiceCard, RankPushCard } from "@/components/visual/service-card";
+import { RevealText } from "@/components/visual/reveal-text";
+import { ServicePackagePricing } from "@/components/detail/service-package-pricing";
 import type { PanelSellerService, PaidPushService } from "@/data/types";
 
 /**
@@ -80,40 +91,78 @@ export function ServiceDetailOverlay() {
 }
 
 function ServiceDossier({ record }: { record: NonNullable<ReturnType<typeof getPanelServiceById>> }) {
-  const wa = buildWhatsAppUrl({
-    id: record.id,
-    title: record.title,
-    price: record.priceInr,
-    mode: record.category,
-    category: record.category,
-    sellerRef: record.sellerRef,
-    inquiry: "Interested in this service. Please share scope & availability.",
-    buyer: true,
-  });
+  const packages = record.packages ?? [];
+  // Controlled package selection — default to the cheapest ("Starting at") tier.
+  const [selectedPackageId, setSelectedPackageId] = React.useState<string | null>(null);
+  const selectedPkg = React.useMemo(() => {
+    if (packages.length === 0) return null;
+    const found = packages.find((p) => p.id === selectedPackageId);
+    if (found) return found;
+    return packages.reduce((a, b) => (b.currentPrice < a.currentPrice ? b : a));
+  }, [packages, selectedPackageId]);
+
+  // The WhatsApp CTA reflects the selected tier (price + label) — not a
+  // hardcoded "starting at" number. Only the selected package changes; the
+  // inquiry stays the same public, buyer-safe context.
+  const wa = React.useMemo(
+    () =>
+      buildWhatsAppUrl({
+        id: record.id,
+        title: record.title,
+        price: selectedPkg?.currentPrice ?? getStartingPrice(record),
+        mode: selectedPkg ? `${record.category} · ${selectedPkg.label}` : record.category,
+        category: record.category,
+        sellerRef: record.sellerRef,
+        inquiry: "Interested in this service. Please share scope & availability.",
+        buyer: true,
+      }),
+    [record, selectedPkg],
+  );
+  const related = getRelatedPanelServices(record.id, 3);
+  const openDetail = useServiceDetailStore((s) => s.open);
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Identity + price */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-2">
+      {/* Top: media-first on mobile, media-left / info-right on desktop */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        <div className="lg:w-[min(620px,55%)] lg:shrink-0">
+          <MediaGallery media={toListingMediaList(record, record.title)} title={record.title} />
+        </div>
+        <div className="flex flex-1 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             {record.demo && <StatusChip tone="warn">SAMPLE</StatusChip>}
             {record.featured && !record.demo && <StatusChip tone="cyan">Featured</StatusChip>}
             <StatusChip tone="violet" icon={<Layers className="h-3 w-3" />}>{record.category}</StatusChip>
           </div>
           <h2 className="font-heading text-3xl font-semibold leading-tight text-[var(--ink)] sm:text-4xl">{record.title}</h2>
-          <p className="font-mono-label text-[10px] text-[var(--ink-soft)]">{record.id} · {record.sellerRef}</p>
-        </div>
-        <div className="flex flex-col items-start gap-2 sm:items-end">
-          <PricePlate value={record.priceInr} size="lg" />
-          <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">
-            Contact Owner
-          </MagneticButton>
+          <p className="font-mono-label text-[10px] text-[var(--ink-soft)]">{record.id}</p>
+          <SellerBadge sellerRef={record.sellerRef} showLabel />
+          <div className="mt-1">
+            <DossierToggles id={record.id} type="panel" />
+          </div>
+          <div className="mt-2 flex flex-col items-start gap-3">
+            <PriceDisplay
+              currentPrice={selectedPkg?.currentPrice ?? getStartingPrice(record)}
+              originalPrice={selectedPkg?.originalPrice ?? getBestPackage(record)?.originalPrice}
+              startingFrom={packages.length > 0 && !selectedPkg}
+              size="lg"
+            />
+            <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">
+              Contact Owner
+            </MagneticButton>
+          </div>
         </div>
       </div>
 
-      {/* Media gallery */}
-      <MediaGallery media={toListingMediaList(record, record.title)} title={record.title} />
+      {/* Package pricing — selectable tiers (drives header price + CTA) */}
+      {packages.length > 0 && (
+        <ServicePackagePricing
+          packages={packages}
+          title="Tiers & pricing"
+          selectedId={selectedPkg?.id ?? null}
+          onSelect={(id) => setSelectedPackageId(id)}
+        />
+      )}
 
       {/* Buyer safety */}
       <BuyerProofPanel variant="banner" />
@@ -192,12 +241,15 @@ function ServiceDossier({ record }: { record: NonNullable<ReturnType<typeof getP
             </GlassPanel>
           )}
 
+          {/* Trust highlights — data-driven, never fabricated */}
+          <TrustHighlights items={record.trustHighlights} max={Infinity} />
+
           <GlassPanel depth="embed" className="p-5">
             <div className="mb-3 flex items-center gap-2">
               <User className="h-4 w-4 text-[var(--accent-azure)]" />
               <p className="font-mono-label text-[9px] text-[var(--accent-azure)]">Seller reference</p>
             </div>
-            <p className="text-sm font-medium text-[var(--ink)]">{record.sellerRef}</p>
+            <SellerBadge sellerRef={record.sellerRef} showLabel />
             <p className="mt-1 font-mono-label text-[8px] text-[var(--ink-soft)]">{record.id}</p>
           </GlassPanel>
 
@@ -214,9 +266,28 @@ function ServiceDossier({ record }: { record: NonNullable<ReturnType<typeof getP
         </div>
       </div>
 
+      {/* Similar services — same category / shared tags */}
+      {related.length > 0 && (
+        <div>
+          <h3 className="mb-5 font-heading text-xl font-semibold text-[var(--ink)]">
+            Similar <span className="font-display text-gradient-cyan italic">services</span>
+          </h3>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((s, i) => (
+              <RevealText key={s.id} delay={i * 80}>
+                <PanelServiceCard record={s} onDetails={() => openDetail(s.id)} />
+              </RevealText>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p className="mx-auto max-w-2xl text-center font-mono-label text-[9px] leading-relaxed text-[var(--ink-soft)]">
         {siteConfig.trustDisclaimer}
       </p>
+
+      {/* Mobile sticky CTA — wishlist + compare + Inquire (single synced state) */}
+      <MobileStickyCTA wa={wa} id={record.id} type="panel" />
     </div>
   );
 }
@@ -227,22 +298,44 @@ function ServiceDossier({ record }: { record: NonNullable<ReturnType<typeof getP
  * terms, seller, evidence, WhatsApp.
  */
 function RankPushDossier({ record }: { record: PaidPushService }) {
-  const wa = buildWhatsAppUrl({
-    id: record.id,
-    title: record.title,
-    price: record.priceInr,
-    mode: `${record.mode} Rank Push · ${record.fromRank} → ${record.toRank}`,
-    category: `${record.mode} Rank Push`,
-    sellerRef: record.sellerRef,
-    inquiry: "Interested in this rank-push package. Please share scope & schedule.",
-    buyer: true,
-  });
+  const packages = record.packages ?? [];
+  // Controlled package selection — default to the cheapest ("Starting at") tier.
+  const [selectedPackageId, setSelectedPackageId] = React.useState<string | null>(null);
+  const selectedPkg = React.useMemo(() => {
+    if (packages.length === 0) return null;
+    const found = packages.find((p) => p.id === selectedPackageId);
+    if (found) return found;
+    return packages.reduce((a, b) => (b.currentPrice < a.currentPrice ? b : a));
+  }, [packages, selectedPackageId]);
+
+  // The WhatsApp CTA reflects the selected tier (price + label).
+  const wa = React.useMemo(
+    () =>
+      buildWhatsAppUrl({
+        id: record.id,
+        title: record.title,
+        price: selectedPkg?.currentPrice ?? getStartingPrice(record),
+        mode: selectedPkg
+          ? `${record.mode} Rank Push · ${record.fromRank} → ${record.toRank} · ${selectedPkg.label}`
+          : `${record.mode} Rank Push · ${record.fromRank} → ${record.toRank}`,
+        category: `${record.mode} Rank Push`,
+        sellerRef: record.sellerRef,
+        inquiry: "Interested in this rank-push package. Please share scope & schedule.",
+        buyer: true,
+      }),
+    [record, selectedPkg],
+  );
+  const related = getRelatedRankPush(record.id, 3);
+  const openDetail = useServiceDetailStore((s) => s.open);
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Identity + price */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-2">
+      {/* Top: media-first on mobile, media-left / info-right on desktop */}
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+        <div className="lg:w-[min(620px,55%)] lg:shrink-0">
+          <MediaGallery media={toListingMediaList(record, record.title)} title={record.title} />
+        </div>
+        <div className="flex flex-1 flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             {record.demo && <StatusChip tone="warn">SAMPLE</StatusChip>}
             {record.featured && !record.demo && <StatusChip tone="cyan">Featured</StatusChip>}
@@ -250,13 +343,32 @@ function RankPushDossier({ record }: { record: PaidPushService }) {
             <StatusChip tone="azure">{record.packageTier}</StatusChip>
           </div>
           <h2 className="font-heading text-3xl font-semibold leading-tight text-[var(--ink)] sm:text-4xl">{record.title}</h2>
-          <p className="font-mono-label text-[10px] text-[var(--ink-soft)]">{record.id} · {record.sellerRef}</p>
-        </div>
-        <div className="flex flex-col items-start gap-2 sm:items-end">
-          <PricePlate value={record.priceInr} size="lg" />
-          <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">Contact Owner</MagneticButton>
+          <p className="font-mono-label text-[10px] text-[var(--ink-soft)]">{record.id}</p>
+          <SellerBadge sellerRef={record.sellerRef} showLabel />
+          <div className="mt-1">
+            <DossierToggles id={record.id} type="paid-push" />
+          </div>
+          <div className="mt-2 flex flex-col items-start gap-3">
+            <PriceDisplay
+              currentPrice={selectedPkg?.currentPrice ?? getStartingPrice(record)}
+              originalPrice={selectedPkg?.originalPrice ?? getBestPackage(record)?.originalPrice}
+              startingFrom={packages.length > 0 && !selectedPkg}
+              size="lg"
+            />
+            <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">Contact Owner</MagneticButton>
+          </div>
         </div>
       </div>
+
+      {/* Package pricing — selectable tiers (drives header price + CTA) */}
+      {packages.length > 0 && (
+        <ServicePackagePricing
+          packages={packages}
+          title="Rank packages & pricing"
+          selectedId={selectedPkg?.id ?? null}
+          onSelect={(id) => setSelectedPackageId(id)}
+        />
+      )}
 
       {/* Rank journey visual */}
       <GlassPanel depth="float" className="relative overflow-hidden p-6">
@@ -277,9 +389,6 @@ function RankPushDossier({ record }: { record: PaidPushService }) {
           </div>
         </div>
       </GlassPanel>
-
-      {/* Media gallery */}
-      <MediaGallery media={toListingMediaList(record, record.title)} title={record.title} />
 
       {/* Buyer safety */}
       <BuyerProofPanel variant="banner" />
@@ -343,12 +452,15 @@ function RankPushDossier({ record }: { record: PaidPushService }) {
             </GlassPanel>
           )}
 
+          {/* Trust highlights — data-driven, never fabricated */}
+          <TrustHighlights items={record.trustHighlights} max={Infinity} />
+
           <GlassPanel depth="embed" className="p-5">
             <div className="mb-3 flex items-center gap-2">
               <User className="h-4 w-4 text-[var(--accent-azure)]" />
               <p className="font-mono-label text-[9px] text-[var(--accent-azure)]">Seller reference</p>
             </div>
-            <p className="text-sm font-medium text-[var(--ink)]">{record.sellerRef}</p>
+            <SellerBadge sellerRef={record.sellerRef} showLabel />
             <p className="mt-1 font-mono-label text-[8px] text-[var(--ink-soft)]">{record.id}</p>
           </GlassPanel>
 
@@ -362,9 +474,70 @@ function RankPushDossier({ record }: { record: PaidPushService }) {
         </div>
       </div>
 
+      {/* Similar packages — same mode / tier / shared tags */}
+      {related.length > 0 && (
+        <div>
+          <h3 className="mb-5 font-heading text-xl font-semibold text-[var(--ink)]">
+            Similar <span className="font-display text-gradient-cyan italic">packages</span>
+          </h3>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {related.map((p, i) => (
+              <RevealText key={p.id} delay={i * 80}>
+                <RankPushCard record={p} onDetails={() => openDetail(p.id)} />
+              </RevealText>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p className="mx-auto max-w-2xl text-center font-mono-label text-[9px] leading-relaxed text-[var(--ink-soft)]">
         {siteConfig.trustDisclaimer}
       </p>
+
+      {/* Mobile sticky CTA — wishlist + compare + Inquire (single synced state) */}
+      <MobileStickyCTA wa={wa} id={record.id} type="paid-push" />
+    </div>
+  );
+}
+
+/**
+ * DossierToggles — wishlist ❤ + compare ⚖ for the detail overlay header.
+ * Uses the same persisted store + type-safe compare as the listing cards.
+ */
+function DossierToggles({ id, type }: { id: string; type: ListingType }) {
+  const toggleFavorite = useFavoritesStore((s) => s.toggleFavorite);
+  const toggleCompare = useFavoritesStore((s) => s.toggleCompare);
+  const isFavorite = useFavoritesStore((s) => s.favorites.includes(id));
+  const isComparing = useFavoritesStore((s) => s.compare.some((e) => e.id === id));
+
+  return (
+    <div className="flex gap-2">
+      <button
+        type="button"
+        aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        aria-pressed={isFavorite}
+        onClick={() => toggleFavorite(id)}
+        className={cn(
+          "glass-embed inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]",
+          isFavorite ? "text-[oklch(0.55_0.2_330)]" : "text-[var(--ink-soft)] hover:text-[var(--accent-violet)]",
+        )}
+      >
+        <Heart className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
+        {isFavorite ? "Saved" : "Save"}
+      </button>
+      <button
+        type="button"
+        aria-label={isComparing ? "Remove from compare" : "Add to compare"}
+        aria-pressed={isComparing}
+        onClick={() => toggleCompare(id, type)}
+        className={cn(
+          "glass-embed inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]",
+          isComparing ? "text-[var(--accent-azure)]" : "text-[var(--ink-soft)] hover:text-[var(--accent-azure)]",
+        )}
+      >
+        <Columns3 className="h-3.5 w-3.5" />
+        {isComparing ? "Comparing" : "Compare"}
+      </button>
     </div>
   );
 }

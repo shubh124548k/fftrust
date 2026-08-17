@@ -9,7 +9,8 @@
 import { instagramViewsData } from "@/data/instagram/views";
 import { instagramFollowersData } from "@/data/instagram/followers";
 import { instagramLikesData } from "@/data/instagram/likes";
-import type { InstagramPackage, InstagramServiceType } from "@/data/types";
+import { instagramCategories } from "@/data/instagram/categories";
+import type { InstagramCategoryMeta, InstagramPackage, InstagramServiceType } from "@/data/types";
 
 export interface InstagramPackageWithSavings extends InstagramPackage {
   /** Savings amount in INR (originalPrice - discountPrice). */
@@ -123,10 +124,79 @@ export function getLikesService(): InstagramServiceType {
   return instagramLikesData;
 }
 
-/** Get a specific package by ID. */
+/** Derived summary for one Instagram hub tile — count + from-price are always
+ *  computed from the canonical package data, never stored/hardcoded. */
+export interface InstagramCategorySummary {
+  meta: InstagramCategoryMeta;
+  /** Number of enabled packages (0 for coming-soon categories). */
+  count: number;
+  /** Cheapest enabled package price in INR (null for coming-soon). */
+  fromPrice: number | null;
+  /** Lowest package quantity as a formatted label (e.g. "From 500"), null for
+   *  coming-soon categories. */
+  fromLabel: string | null;
+}
+
+const servicePackageLoader: Record<string, () => InstagramPackageWithSavings[]> = {
+  views: getViewsPackages,
+  followers: getFollowersPackages,
+  likes: getLikesPackages,
+};
+
+/** Build every Instagram hub tile from canonical category metadata + data. */
+export function getInstagramCategorySummaries(): InstagramCategorySummary[] {
+  return instagramCategories.map((meta) => {
+    const load = servicePackageLoader[meta.key];
+    if (!load) {
+      return { meta, count: 0, fromPrice: null, fromLabel: null };
+    }
+    const pkgs = load();
+    if (pkgs.length === 0) {
+      return { meta, count: 0, fromPrice: null, fromLabel: null };
+    }
+    const cheapest = pkgs.reduce((a, b) => (b.discountPrice < a.discountPrice ? b : a));
+    return {
+      meta,
+      count: pkgs.length,
+      fromPrice: cheapest.discountPrice,
+      fromLabel: `From ${formatQuantity(cheapest.quantity)}`,
+    };
+  });
+}
+
+/** Get a specific package by ID (Views pool). */
 export function getPackageById(id: string): InstagramPackageWithSavings | null {
   const all = getViewsPackages();
   return all.find((p) => p.id === id) ?? null;
+}
+
+/** Get a specific package by ID across ALL Instagram services (views,
+ *  followers, likes). Used by wishlist / compare resolution so an Instagram
+ *  package can be looked up from any part of the app. */
+export function getInstagramPackageById(id: string): InstagramPackageWithSavings | null {
+  const pools = [getViewsPackages(), getFollowersPackages(), getLikesPackages()];
+  for (const pool of pools) {
+    const found = pool.find((p) => p.id === id);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Resolve the canonical service type (Views/Followers/Likes) that owns a
+ *  package ID, or null when the ID does not resolve. */
+export function getInstagramServiceByPackageId(
+  id: string,
+): { service: InstagramServiceType; pkg: InstagramPackageWithSavings } | null {
+  const entries: { service: InstagramServiceType; packages: () => InstagramPackageWithSavings[] }[] = [
+    { service: instagramViewsData, packages: getViewsPackages },
+    { service: instagramFollowersData, packages: getFollowersPackages },
+    { service: instagramLikesData, packages: getLikesPackages },
+  ];
+  for (const entry of entries) {
+    const pkg = entry.packages().find((p) => p.id === id);
+    if (pkg) return { service: entry.service, pkg };
+  }
+  return null;
 }
 
 /** Sanitize a single-line form value for embedding in a WhatsApp message. */

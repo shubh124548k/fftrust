@@ -121,7 +121,15 @@ export function SiteFooter() {
               { href: "/privacy", label: "Privacy Policy" },
               { href: "/terms", label: "Terms of Service" },
               { href: "/refund-policy", label: "Refund Policy" },
+              { href: "/purchase-policy", label: "Purchase Policy" },
+              { href: "/account-transfer-policy", label: "Account Transfer Policy" },
+              { href: "/listing-policy", label: "Listing Policy" },
+              { href: "/content-policy", label: "Content Policy" },
+              { href: "/seller-policy", label: "Seller Policy" },
+              { href: "/free-fire-policy", label: "Free Fire Account Policy" },
+              { href: "/services-policy", label: "Paid Push & Services Policy" },
               { href: "/disclaimer", label: "Disclaimer" },
+              { href: "/support", label: "Support" },
             ].map((link) => (
               <Link
                 key={link.href}

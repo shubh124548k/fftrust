@@ -71,6 +71,7 @@ console.log("2) Metadata coverage on every public route");
     { route: "/accounts", file: "app/accounts/page.tsx", expectTitle: "Free Fire Account Listings" },
     { route: "/services", file: "app/services/page.tsx", expectTitle: "Panel & Services" },
     { route: "/paid-push", file: "app/paid-push/page.tsx", expectTitle: "Paid Push" },
+    { route: "/instagram", file: "app/instagram/page.tsx", expectTitle: "Instagram" },
     { route: "/instagram/views", file: "app/instagram/views/page.tsx", expectTitle: "Instagram Views" },
     { route: "/instagram/followers", file: "app/instagram/followers/page.tsx", expectTitle: "Instagram Followers" },
     { route: "/instagram/likes", file: "app/instagram/likes/page.tsx", expectTitle: "Instagram Likes" },
@@ -110,7 +111,7 @@ console.log("3) sitemap + robots source");
 {
   const sitemap = read("app/sitemap.ts");
   const required = [
-    "/accounts", "/services", "/paid-push", "/instagram/views", "/instagram/followers",
+    "/accounts", "/services", "/paid-push", "/instagram", "/instagram/views", "/instagram/followers",
     "/instagram/likes", "/wishlist", "/compare", "/proof", "/safety", "/contact",
     "/privacy", "/terms", "/refund-policy", "/disclaimer",
   ];
@@ -166,7 +167,7 @@ console.log("5) Premium 404");
   check("not-found.tsx exists", nf.length > 0);
   check("404 has lost-in-marketplace headline", nf.includes("Lost in the"));
   check("404 links back home", nf.includes('href="/"'));
-  check("404 links to explore", nf.includes('href="/#explore"'));
+  check("404 links to explore", nf.includes('href="/accounts"'));
   check("404 uses GlassPanel holo premium", nf.includes("GlassPanel") && nf.includes("holo"));
 }
 

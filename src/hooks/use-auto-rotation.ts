@@ -54,11 +54,32 @@ export function useAutoRotation(
   const [index, setIndex] = React.useState(0);
   const [phase, setPhase] = React.useState<"enter" | "exit">("enter");
   const [paused, setPaused] = React.useState(false);
+  // Respect prefers-reduced-motion: rotation is disabled entirely so the
+  // showcase stays static for users who opt out of motion.
+  const [motionOk, setMotionOk] = React.useState(() =>
+    typeof window === "undefined" || !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+
+  React.useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setMotionOk(!mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   const pausedRef = React.useRef(false);
   const indexRef = React.useRef(0);
   const exitTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const releaseTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reset rotation when `resetKey` changes identity (derived during render, so
+  // no synchronous state updates run inside an effect).
+  const [prevResetKey, setPrevResetKey] = React.useState<unknown>(resetKey);
+  if (resetKey !== prevResetKey && resetKey !== undefined) {
+    setPrevResetKey(resetKey);
+    setIndex(0);
+    setPhase("enter");
+  }
 
   const pause = React.useCallback(() => {
     pausedRef.current = true;
@@ -111,18 +132,7 @@ export function useAutoRotation(
   }, [paused]);
 
   React.useEffect(() => {
-    if (resetKey === undefined) return;
-    indexRef.current = 0;
-    setIndex(0);
-    setPhase("enter");
-    if (exitTimerRef.current) {
-      clearTimeout(exitTimerRef.current);
-      exitTimerRef.current = null;
-    }
-  }, [resetKey]);
-
-  React.useEffect(() => {
-    if (!enabled || paused || totalPages <= 1) return;
+    if (!enabled || paused || !motionOk || totalPages <= 1) return;
     const t = setInterval(advance, intervalMs);
     return () => {
       clearInterval(t);
@@ -131,7 +141,7 @@ export function useAutoRotation(
         exitTimerRef.current = null;
       }
     };
-  }, [enabled, paused, totalPages, advance, intervalMs]);
+  }, [enabled, paused, motionOk, totalPages, advance, intervalMs, resetKey]);
 
   // Pause nonessential rotation while the tab is hidden (backgrounded app or
   // switched away). Browsers throttle timers in hidden tabs, which causes the

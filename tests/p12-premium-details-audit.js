@@ -23,8 +23,16 @@
  * 12. No console errors during any interaction.
  */
 const puppeteer = require("puppeteer-core");
-const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const fs = require("fs");
 const BASE = "http://localhost:1111";
+const CANDIDATE_BROWSERS = [
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+];
+const BROWSER = CANDIDATE_BROWSERS.find((p) => fs.existsSync(p));
+if (!BROWSER) { console.error("No browser found for Puppeteer"); process.exit(1); }
 
 const ARCHITECT = "SAMPLE — Architect Account";
 const STARTER = "SAMPLE — Starter Vault";
@@ -82,7 +90,7 @@ function check(name, ok, detail) {
 
 (async () => {
   const browser = await puppeteer.launch({
-    executablePath: EDGE,
+    executablePath: BROWSER,
     headless: "new",
     args: ["--no-sandbox", "--disable-gpu"],
   });
@@ -101,7 +109,7 @@ function check(name, ok, detail) {
   // ---------------------------------------------------------------
   console.log("1) Account Details open/close");
   await page.setViewport({ width: 1440, height: 900 });
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(900);
 
   await page.evaluate((t) => {
@@ -171,7 +179,7 @@ function check(name, ok, detail) {
       };
     });
     check("gallery renders 5 thumbnails", g && g.thumbs === 5, JSON.stringify(g));
-    check("counter starts at 1 / 5", g && g.counter === "1 / 5", JSON.stringify(g));
+    check("counter starts at 1 / 6 (5 images + video)", g && g.counter === "1 / 6", JSON.stringify(g));
   }
 
   await page.click('button[aria-label="Next media"]');
@@ -181,7 +189,7 @@ function check(name, ok, detail) {
     const spans = Array.from(d.querySelectorAll("span")).map((s) => s.textContent || "");
     return spans.find((s) => /^\d+ \/ \d+$/.test(s)) || null;
   });
-  check("Next media → 2 / 5", counter === "2 / 5", counter || "no counter");
+  check("Next media → 2 / 6", counter === "2 / 6", counter || "no counter");
 
   await page.click('button[aria-label="Previous media"]');
   await sleep(250);
@@ -190,7 +198,7 @@ function check(name, ok, detail) {
     const spans = Array.from(d.querySelectorAll("span")).map((s) => s.textContent || "");
     return spans.find((s) => /^\d+ \/ \d+$/.test(s)) || null;
   });
-  check("Previous media → 1 / 5", counter === "1 / 5", counter || "no counter");
+  check("Previous media → 1 / 6", counter === "1 / 6", counter || "no counter");
 
   await page.click('button[aria-label="View media 5"]');
   await sleep(250);
@@ -199,7 +207,7 @@ function check(name, ok, detail) {
     const spans = Array.from(d.querySelectorAll("span")).map((s) => s.textContent || "");
     return spans.find((s) => /^\d+ \/ \d+$/.test(s)) || null;
   });
-  check("thumbnail 5 → 5 / 5", counter === "5 / 5", counter || "no counter");
+  check("thumbnail 5 → 5 / 6", counter === "5 / 6", counter || "no counter");
 
   // Lightbox
   await page.click('button[aria-label="Open fullscreen"]');
@@ -216,7 +224,7 @@ function check(name, ok, detail) {
     }, ARCHITECT);
     check("lightbox opens with aria-label", !!lb);
     check("lightbox displays the active image", lb && lb.imgs === 1, JSON.stringify(lb));
-    check("lightbox counter 5 / 5", lb && lb.counter === "5 / 5 · Escape to close", JSON.stringify(lb));
+    check("lightbox counter 5 / 6", lb && lb.counter === "5 / 6 · Escape to close", JSON.stringify(lb));
     check("lightbox locks scroll", lb && lb.locked);
   }
   await page.keyboard.press("Escape");
@@ -250,15 +258,19 @@ function check(name, ok, detail) {
       return {
         thumbs: d.querySelectorAll('button[aria-label^="View media"]').length,
         counter: spans.find((s) => /^\d+ \/ \d+$/.test(s)) || null,
+        videoTile: Array.from(d.querySelectorAll("button")).some((b) => (b.getAttribute("aria-label") || "").startsWith("Play video")),
         videoLabel: (d.textContent || "").includes("Video"),
         iframes: d.querySelectorAll("iframe").length,
       };
     });
     check("video account gallery is images-only (2 thumbnails)", g && g.thumbs === 2, JSON.stringify(g));
-    check("image counter starts at 1 / 2", g && g.counter === "1 / 2", JSON.stringify(g));
-    check("video section label rendered below gallery", g && g.videoLabel);
-    check("exactly one video iframe (below gallery)", g && g.iframes === 1, JSON.stringify(g));
+    check("image counter starts at 1 / 3 (2 images + video)", g && g.counter === "1 / 3", JSON.stringify(g));
+    check("video appears as a gallery tile (Play video button)", g && g.videoTile, JSON.stringify(g));
   }
+
+  // activate the video tile → SafeVideo mounts the embed inside the same gallery
+  await page.click('button[aria-label^="Play video"]');
+  await sleep(600);
 
   {
     const v = await page.evaluate(() => {
@@ -271,10 +283,15 @@ function check(name, ok, detail) {
         autoplayParam: iframe ? (iframe.getAttribute("src") || "").includes("autoplay") : false,
       };
     });
+    check("exactly one video iframe (gallery tile active)", !!v.iframeSrc && !v.nativeVideoSrc, JSON.stringify(v));
     check("video renders as youtube-nocookie iframe", !!v.iframeSrc && v.iframeSrc.includes("youtube-nocookie.com/embed/"), JSON.stringify(v));
     check("no native <video src> (no broken tile)", !v.nativeVideoSrc);
     check("no autoplay parameter", !v.autoplayParam);
   }
+
+  // return to the first image slide so the fullscreen lightbox opens on an image
+  await page.click('button[aria-label="View media 1"]');
+  await sleep(300);
 
   await page.click('button[aria-label="Open fullscreen"]');
   await sleep(500);
@@ -340,8 +357,11 @@ function check(name, ok, detail) {
   // 5) Service Details (Panel + Paid Push) BuyerProofPanel + WA
   // ---------------------------------------------------------------
   console.log("5) Service Details (Panel)");
+  await page.goto(`${BASE}/services`, { waitUntil: "networkidle0", timeout: 60000 });
+  await sleep(700);
   await page.evaluate((t) => {
     window.__opened = [];
+    window.open = (u) => { window.__opened.push(String(u)); return null; };
     const b = Array.from(document.querySelectorAll("button")).find((x) => (x.getAttribute("aria-label") || "") === `View details for ${t}`);
     if (b) b.click();
   }, PANEL);
@@ -378,7 +398,7 @@ function check(name, ok, detail) {
       check("service wa has Category: panel", text.includes("Category: panel"));
       check("service wa has Item title", text.includes("Item: SAMPLE — Diamond Panel (Streaming)"));
       check("service wa has Ref", text.includes("Ref: SAMPLE-SVC-PANEL-001"));
-      check("service wa has Listed price ₹900", text.includes("Listed price: ₹900 INR"));
+      check("service wa has Listed price ₹699", text.includes("Listed price: ₹699 INR"));
       check("service wa has Package (mode)", text.includes("Package: panel"));
       check("service wa has buyer-proof TURN ON SCREEN RECORDING", text.includes("TURN ON SCREEN RECORDING"));
       check("service wa has Buyer Proof line", text.includes("Buyer Proof: KEEP SCREEN RECORDING ON"));

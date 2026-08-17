@@ -1,46 +1,23 @@
-"use client";
-
-import * as React from "react";
 import Link from "next/link";
 import {
-  Compass,
   ShieldCheck,
   BadgeIndianRupee,
-  LayoutList,
-  Server,
-  Trophy,
   Info,
-  Mail,
-  Receipt,
-  KeyRound,
   ArrowRight,
-  HelpCircle,
   Scale,
   ChevronDown,
-  Plus,
 } from "lucide-react";
 import { Hero } from "@/components/home/hero";
 import { CategoryHub } from "@/components/home/category-hub";
 import { SectionHeading } from "@/components/visual/section-heading";
-import { RevealText, RevealGroup } from "@/components/visual/reveal-text";
+import { RevealText } from "@/components/visual/reveal-text";
 import { GlassPanel, GlassCard } from "@/components/visual/glass-panel";
 import { BuyerProofPanel } from "@/components/proof/buyer-proof-panel";
 import { ProofCardGrid } from "@/components/proof/proof-card-grid";
 import { ParallaxLayer } from "@/components/visual/parallax-layer";
-import { MagneticButton } from "@/components/visual/magnetic-button";
-import { EmptyState } from "@/components/visual/empty-state";
 import { StatusChip } from "@/components/visual/status-chip";
 import { siteConfig } from "@/config/site";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
-import {
-  getFeaturedAccounts,
-  getAccountPriceBounds,
-  getRealAccountCount,
-} from "@/lib/selectors/accounts";
-import {
-  getFeaturedPanelServices,
-  getFeaturedRankPush,
-} from "@/lib/selectors/services";
 import {
   getTrustContent,
   getPriceGuideContent,
@@ -58,13 +35,8 @@ import {
   PriceGuideDerived,
   CompareStage,
 } from "@/components/editorial/editorial-sections";
-import { SellerIntakeOverlay } from "@/components/intake/seller-intake-overlay";
-import { PanelSellerShowroom } from "@/components/showroom/panel-seller-showroom";
-import { PaidPushMarketplace } from "@/components/showroom/paid-push-marketplace";
-import { InstagramServicesPreview } from "@/components/instagram/instagram-services-preview";
 import { PromotionInfoBox } from "@/components/promotion/promotion-info-box";
 import { FaqJsonLd } from "@/components/seo/structured-data";
-import { useSellerContactStore } from "@/stores/seller-contact";
 import {
   FloatingRail,
   SplitEditorial,
@@ -75,37 +47,29 @@ import {
   CinematicCTA,
 } from "@/components/home/sections";
 import { FreeJoinPromo, FreeJoinNotice } from "@/components/home/free-join-promo";
-import { ExploreCatalogue } from "@/components/explore/explore-catalogue";
+import { SellerContactActions } from "@/components/seller/seller-contact-actions";
 
 /**
- * FF TRUST — Home (PROMPT 05 god-level 10D cinematic launch).
+ * FF TRUST — Home (PROMPT 2 clean marketplace gateway).
  *
- * The strongest visual statement. Varied compositions with different rhythms:
- *  1 Hero stage — huge editorial type + 3D focal object + floating micro-panels
- *  2 Trust philosophy — split editorial with 3D object
- *  3 Featured accounts — horizontal floating rail
- *  4 How it works — 3D process diagram (4 connected steps)
- *  5 Services marketplace — service showroom (Panel Seller + Paid Push split)
- *  6 Evidence/Safety — buyer safety reminder
- *  7 Scam center — evidence orbit (red flags + golden rule)
- *  8 Price guide preview — derived bounds or honest empty state
- *  9 Compare/Favorites — comparison stage
- * 10 List your account — split editorial onboarding
- * 11 3D object showcase — rendering engine proof
- * 12 FAQ — expandable accordions
- * 13 About — split editorial + disclosure
- * 14 Legal — terms + privacy panels
- * 15 Final contact — cinematic CTA
+ * The homepage is a GATEWAY, not a listing page. No product grids — the
+ * marketplace surfaces (accounts, panel seller, paid push, Instagram) live on
+ * their dedicated pages and are reached from the category hub:
+ *  1 Hero stage — simplified gateway message + honest live counts
+ *  2 Category hub — three primary marketplaces (FREE FIRE / PANELS &
+ *    SERVICES / SOCIAL MEDIA) built on ONE reusable CategoryCard
+ *  3 Free to join — listing onboarding prompt
+ *  4 Trust Center — why trust it
+ *  5 How it works — the transparent 4-step flow
+ *  6 Trust/safety editorial (proof, scam center, price guide, compare)
+ *  7 List your account — seller intake workflow
+ *  8 FAQ / About / Legal / Contact
  *
- * Data is always canonical: featured sections show REAL inventory when
- * available, otherwise an honest empty state — SAMPLE fixtures are used only
- * inside clearly-labeled demonstration frames. No fake counts.
+ * Data is always canonical: every count comes from the production catalogue.
+ * SAMPLE fixtures are used only inside clearly-labeled demonstration frames.
+ * No fake counts, no fake inventory.
  */
 export default function Home() {
-  const featured = getFeaturedAccounts(6);
-  const priceBounds = getAccountPriceBounds();
-  const panelFeatured = getFeaturedPanelServices(2);
-  const pushFeatured = getFeaturedRankPush(2);
   const trust = getTrustContent();
   const priceGuide = getPriceGuideContent();
   const faqs = getFAQs();
@@ -114,20 +78,14 @@ export default function Home() {
   const scamCenter = getScamCenterContent();
   const compare = getCompareContent();
   const safetyAcademy = getSafetyAcademyContent();
-  const realAccounts = getRealAccountCount();
-  const listWa = buildWhatsAppUrl({
-    inquiry: "I'd like to list an account on FF TRUST. Please share the seller process.",
-  });
   const contactWa = buildWhatsAppUrl({ inquiry: "Hello FF TRUST, I'd like to know more." });
-  const [intakeOpen, setIntakeOpen] = React.useState(false);
-  const openSellerPopup = useSellerContactStore((s) => s.openPopup);
 
   return (
     <>
       {/* 1 — HERO STAGE */}
       <Hero />
 
-      {/* 1a — CATEGORY HUB (four data-aware marketplace destinations) */}
+      {/* 1a — CATEGORY HUB (three primary marketplace destinations) */}
       <CategoryHub />
 
       {/* 1b — FREE TO JOIN (compact notice + premium promo card, top of home) */}
@@ -153,30 +111,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3 — EXPLORE (cinematic catalogue + dynamic search/filters) */}
-      <section id="explore" aria-labelledby="explore-title" className="relative pt-16 pb-12 sm:pt-20 sm:pb-16 lg:section-ff" data-light="catalogue">
-        <div className="container-wide">
-          <div className="mb-4 flex flex-col gap-2 sm:mb-10 sm:gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <SectionHeading
-              overline="02 — Explore"
-              title="Free Fire account"
-              italic="listings"
-              support="A high-density but premium catalogue. Search, filter and sort through canonical records — every value below is derived from published listings. No fake popularity, ratings or reviews."
-              id="explore-title"
-            />
-          </div>
-          <ExploreCatalogue rotate />
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/accounts"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent-azure)] hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
-            >
-              View All Accounts
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* 3 — MARKETPLACE GRIDS removed (PROMPT 2 gateway):
+          account listings, panel-seller and paid-push showrooms, and the
+          Instagram preview now live on their dedicated marketplace pages.
+          The homepage is a clean gateway — no product grids. */}
 
       {/* 4 — HOW IT WORKS (3D process diagram) */}
       <section id="how-it-works" aria-labelledby="how-title" className="section-ff relative" data-light="dossier">
@@ -191,41 +129,6 @@ export default function Home() {
           <ProcessDiagram steps={howItWorks.steps} />
         </div>
       </section>
-
-      {/* 5 — PANEL SELLER (cinematic service showroom) */}
-      <section id="panel-seller" aria-labelledby="panel-title" className="relative pt-16 pb-16 sm:section-ff" data-light="showroom">
-        <div className="container-wide">
-          <PanelSellerShowroom rotate />
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/services"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent-azure)] hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
-            >
-              View All Panel & Services
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 5b — PAID PUSH (CS/BR progression marketplace) */}
-      <section id="paid-push" aria-labelledby="paid-push-title" className="relative pt-16 pb-16 sm:section-ff" data-light="showroom">
-        <div className="container-wide">
-          <PaidPushMarketplace rotate />
-          <div className="mt-8 flex justify-center">
-            <Link
-              href="/paid-push"
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] transition-colors hover:border-[var(--accent-azure)] hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
-            >
-              View All Paid Push — CS / BR
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 5c — INSTAGRAM SERVICES (3 category cards + More Options) */}
-      <InstagramServicesPreview />
 
       {/* 5d — FREE & PAID PROMOTION (reusable info box) */}
       <section id="promotion" aria-labelledby="promotion-title" className="section-ff relative" data-light="trust">
@@ -256,7 +159,7 @@ export default function Home() {
         <div className="container-wide">
           <div className="mb-8 flex flex-col gap-4 sm:mb-10 lg:flex-row lg:items-end lg:justify-between">
             <SectionHeading
-              overline="06c — Proof"
+              overline="05 — Proof"
               title="Buyer proof,"
               italic="card by card"
               support="Screen recording preserves clear evidence of the verification and transaction. This compact guide covers verification, evidence, transaction safety, scam prevention and more."
@@ -307,7 +210,7 @@ export default function Home() {
         <div className="container-wide">
           <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
             <SectionHeading
-              overline="08 — List Your Account"
+              overline="09 — List Your Account"
               title="Seller intake"
               italic="workflow"
               support="A transparent 6-step glass workflow: Contact Owner → Provide Details → Provide Evidence → Live Verification → Owner Review → Publication. Collects only non-secret public information. Submission is not verification and not publication."
@@ -316,66 +219,8 @@ export default function Home() {
             <RevealText delay={120}>
               <GlassCard depth="pedestal" holo className="relative overflow-hidden p-8">
                 <div aria-hidden className="light-wash absolute inset-0" />
-                <div className="relative flex flex-col gap-5">
-                  <div className="flex items-center gap-2">
-                    <StatusChip tone="cyan" icon={<LayoutList className="h-3 w-3" />}>Seller onboarding</StatusChip>
-                    <StatusChip tone="violet">3 seller types</StatusChip>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <button
-                      type="button"
-                      onClick={() => openSellerPopup("account")}
-                      className="glass-embed flex items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[var(--neon-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.82_0.1_200/0.15)] text-[var(--accent-azure)]">
-                        <LayoutList className="h-5 w-5" />
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-[var(--ink)]">Free Fire Account</p>
-                        <p className="text-xs text-[var(--ink-soft)]">List an account for sale</p>
-                      </div>
-                      <Plus className="h-4 w-4 text-[var(--ink-soft)]" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openSellerPopup("panel")}
-                      className="glass-embed flex items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[var(--neon-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.7_0.12_290/0.15)] text-[var(--accent-violet)]">
-                        <Server className="h-5 w-5" />
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-[var(--ink)]">Panel Seller Service</p>
-                        <p className="text-xs text-[var(--ink-soft)]">List a panel/top-up service</p>
-                      </div>
-                      <Plus className="h-4 w-4 text-[var(--ink-soft)]" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => openSellerPopup("paid-push")}
-                      className="glass-embed flex items-center gap-3 rounded-2xl p-4 text-left transition-all hover:shadow-[var(--neon-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[oklch(0.74_0.15_196/0.15)] text-[var(--accent-cyan)]">
-                        <Trophy className="h-5 w-5" />
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-[var(--ink)]">Paid Push Service</p>
-                        <p className="text-xs text-[var(--ink-soft)]">List CS/BR rank-push packages</p>
-                      </div>
-                      <Plus className="h-4 w-4 text-[var(--ink-soft)]" />
-                    </button>
-                  </div>
-                  <MagneticButton
-                    className="w-full"
-                    onClick={() => openSellerPopup("account")}
-                    strength={6}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Contact to Owner
-                  </MagneticButton>
-                  <p className="font-mono-label text-[9px] leading-relaxed text-[var(--ink-soft)]">
-                    Once the owner manually publishes an approved canonical record, every public consumer updates automatically.
-                  </p>
+                <div className="relative">
+                  <SellerContactActions />
                 </div>
               </GlassCard>
             </RevealText>
@@ -510,20 +355,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Seller intake overlay (opens from List Your Account) */}
-      {intakeOpen && <SellerIntakeOverlay onClose={() => setIntakeOpen(false)} />}
-
       {/* SEO: FAQ structured data */}
       <FaqJsonLd faqs={faqs} />
     </>
-  );
-}
-
-function PriceStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="font-mono-label text-[10px] text-[var(--ink-soft)]">{label}</span>
-      <span className="font-heading text-3xl font-semibold text-gradient-cyan">{value}</span>
-    </div>
   );
 }

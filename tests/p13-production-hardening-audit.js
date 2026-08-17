@@ -5,13 +5,21 @@
 // (title/canonical/OG/Twitter), no horizontal overflow across 15 widths,
 // no console errors, canonical WhatsApp flows preserved.
 const puppeteer = require("puppeteer-core");
+const fs = require("fs");
 
 const BASE = "http://localhost:1111";
 // Canonical site URL mirrors the app: NEXT_PUBLIC_SITE_URL in production,
 // localhost:1111 as the local-development fallback. Tests assert metadata
 // against the same resolution the site uses.
 const CANON = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:1111").replace(/\/+$/, "");
-const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const CANDIDATE_BROWSERS = [
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+];
+const BROWSER = CANDIDATE_BROWSERS.find((p) => fs.existsSync(p));
+if (!BROWSER) { console.error("No browser found for Puppeteer"); process.exit(1); }
 const WIDTHS = [320, 360, 375, 390, 414, 430, 480, 768, 820, 1024, 1280, 1366, 1440, 1600, 1920];
 
 let failures = 0;
@@ -22,7 +30,7 @@ function check(name, ok, extra = "") {
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
 (async () => {
-  const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
+  const browser = await puppeteer.launch({ executablePath: BROWSER, headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
   const page = await browser.newPage();
   const consoleErrors = [];
   page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
@@ -111,7 +119,7 @@ function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
   const nf = await page.evaluate(() => ({
     text: document.body.innerText,
     homeLink: !!Array.from(document.querySelectorAll("a")).find((a) => a.getAttribute("href") === "/" && /back home/i.test(a.textContent)),
-    exploreLink: !!Array.from(document.querySelectorAll("a")).find((a) => a.getAttribute("href") === "/#explore" && /explore/i.test(a.textContent)),
+    exploreLink: !!Array.from(document.querySelectorAll("a")).find((a) => a.getAttribute("href") === "/accounts" && /explore/i.test(a.textContent)),
     hasHeader: !!document.querySelector("header"),
     hasFooter: !!document.querySelector("footer"),
   }));

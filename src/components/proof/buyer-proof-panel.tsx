@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { Video } from "lucide-react";
 import { GlassPanel } from "@/components/visual/glass-panel";

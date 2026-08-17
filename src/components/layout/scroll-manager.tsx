@@ -14,9 +14,9 @@ import { usePathname } from "next/navigation";
  *  - clicking a "Home" link (href="/") while already on `/`.
  *
  * Deliberately does NOT run for:
- *  - hash / anchor navigations (e.g. `/#explore`) — the fixed-header anchor
- *    CSS (scroll-padding-top) handles those, and we must not stomp the
- *    landing offset that the p8 audit depends on;
+ *  - hash / anchor navigations (e.g. `/#category-hub`) — the fixed-header
+ *    anchor CSS (scroll-padding-top) handles those, and we must not stomp
+ *    the landing offset that the p8 audit depends on;
  *  - any other route — normal per-page scroll behavior is untouched;
  *  - the initial page load (the browser already loads at the top).
  *
@@ -64,7 +64,7 @@ export function ScrollManager() {
   // covers the brand logo, the Home nav item and mobile/footer links. Uses the
   // capture phase so the reset happens BEFORE Next.js Link records the current
   // scroll position for the outgoing history entry (e.g. when removing a hash
-  // from `/#explore`), which prevents the browser from restoring it. When a
+  // from `/#category-hub`), which prevents the browser from restoring it. When a
   // hash is present, Next.js also runs its own scroll restore after the
   // navigation settles, so the top position is re-asserted for a short window
   // until that restore finishes.

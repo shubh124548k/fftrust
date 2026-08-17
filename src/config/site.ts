@@ -33,7 +33,7 @@ export const siteConfig: SiteConfig = {
   name: "FF TRUST",
   tagline: "Account Trust Studio",
   shortDescription:
-    "An independent account-trust marketplace for Free Fire accounts, panel-seller services and rank-push packages — built around transparency, evidence and buyer safety.",
+    "An independent marketplace for Free Fire accounts, panels & services, and social media growth — built on transparency, evidence and buyer safety.",
   seoDescription:
     "FF TRUST is an independent platform for Free Fire account listings, panel and services listings, paid push packages and Instagram views, followers and likes — with buyer proof and transparency throughout. Not affiliated with Garena or Free Fire.",
   brandLogo: "/fftrust.png",

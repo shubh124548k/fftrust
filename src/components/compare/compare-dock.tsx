@@ -2,26 +2,51 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { X, ArrowRight, Columns3, AlertCircle } from "lucide-react";
-import { useFavoritesStore } from "@/stores/favorites";
-import {
-  getAccountById,
-  getFeaturedAccounts,
-} from "@/lib/selectors/accounts";
-import {
-  getPanelServiceById,
-  getRankPushById,
-  getFeaturedPanelServices,
-  getFeaturedRankPush,
-} from "@/lib/selectors/services";
+import Image from "next/image";
+import { X, ArrowRight, Columns3, AlertCircle, Plus } from "lucide-react";
+import { COMPARE_TYPE_LABELS, COMPARE_TYPE_PLURALS, useFavoritesStore } from "@/stores/favorites";
+import { getAccountById } from "@/lib/selectors/accounts";
+import { getPanelServiceById, getRankPushById } from "@/lib/selectors/services";
+import { getInstagramServiceByPackageId } from "@/lib/selectors/instagram";
+import { resolveListingMedia } from "@/lib/media";
 import { cn } from "@/lib/utils";
-import type { AccountListing, PanelSellerService, PaidPushService } from "@/data/types";
+import type { AccountListing, PanelSellerService, PaidPushService, InstagramServiceType } from "@/data/types";
+import type { InstagramPackageWithSavings } from "@/lib/selectors/instagram";
+import type { ResolvedMedia } from "@/lib/media";
+
+/** Marketplace route per compare type ("Add another X" target). */
+const TYPE_HREF: Record<string, string> = {
+  account: "/accounts",
+  panel: "/services",
+  "paid-push": "/paid-push",
+  instagram: "/instagram/views",
+};
+
+/** Normalized Instagram record for the compare dock. */
+type InstagramCompareRecord = {
+  id: string;
+  title: string;
+  priceInr: number;
+  service: InstagramServiceType;
+  pkg: InstagramPackageWithSavings;
+};
 
 /** A compare entry resolved to its canonical record (non-null). */
 type ResolvedCompareEntry =
   | { entry: { id: string; type: "account" }; record: AccountListing }
   | { entry: { id: string; type: "panel" }; record: PanelSellerService }
-  | { entry: { id: string; type: "paid-push" }; record: PaidPushService };
+  | { entry: { id: string; type: "paid-push" }; record: PaidPushService }
+  | { entry: { id: string; type: "instagram" }; record: InstagramCompareRecord };
+
+/**
+ * Resolve a small cover thumbnail for a resolved compare entry, or null when
+ * the entry has no media (Instagram packages have no listing media).
+ */
+function resolveThumb(entry: ResolvedCompareEntry): { src: string; alt: string } | null {
+  if (entry.entry.type === "instagram") return null;
+  const media = resolveListingMedia(entry.record as AccountListing | PanelSellerService | PaidPushService, entry.record.title);
+  return media.frontImage ? { src: media.frontImage, alt: media.frontImageAlt } : null;
+}
 
 /**
  * FF TRUST — Compare Dock.
@@ -31,8 +56,9 @@ type ResolvedCompareEntry =
  *
  * Features:
  *  - Type-safe: only same-type listings can be compared (enforced by the store)
- *  - Max 4 selections
+ *  - Max 2 selections ("Compare up to 2 X")
  *  - Shows error message when cross-type comparison is attempted
+ *  - Shows resolved thumbnails + a type-specific "Add another X" slot
  *  - Responsive: horizontal scroll on mobile, full row on desktop
  *  - Smooth entrance/exit animation
  *  - Links to /compare page
@@ -45,27 +71,44 @@ export function CompareDock() {
   const clearCompare = useFavoritesStore((s) => s.clearCompare);
   const compareMax = useFavoritesStore((s) => s.compareMax);
 
-  // Resolve all compare IDs to their records for display
-  const resolved = React.useMemo(() => {
-    const accounts = getFeaturedAccounts(999).records;
-    const panels = getFeaturedPanelServices(999).records;
-    const pushes = getFeaturedRankPush(999).records;
-
-    return compare
-      .map((entry) => {
-        if (entry.type === "account") {
-          const r = getAccountById(entry.id, accounts);
+  // Resolve all compare IDs to their canonical records. By-id lookup against
+  // the FULL canonical pool (published + SAMPLE fixtures) — the tray must
+  // resolve exactly the records users can actually select on cards. The site's
+  // current visible inventory is SAMPLE fixtures (always inside a labeled
+  // SAMPLE frame); when the owner publishes real inventory the same lookup
+  // resolves those records too. Direct by-id lookup, never full list builds.
+  const resolved = React.useMemo(
+    () =>
+      compare
+        .map((entry) => {
+          if (entry.type === "account") {
+            const r = getAccountById(entry.id);
+            return r ? { entry, record: r } : null;
+          }
+          if (entry.type === "panel") {
+            const r = getPanelServiceById(entry.id);
+            return r ? { entry, record: r } : null;
+          }
+          if (entry.type === "instagram") {
+            const match = getInstagramServiceByPackageId(entry.id);
+            if (!match || !match.pkg.enabled) return null;
+            return {
+              entry,
+              record: {
+                id: match.pkg.id,
+                title: `${match.service.label} — ${match.pkg.formattedQuantity}`,
+                priceInr: match.pkg.discountPrice,
+                service: match.service,
+                pkg: match.pkg,
+              } satisfies InstagramCompareRecord,
+            };
+          }
+          const r = getRankPushById(entry.id);
           return r ? { entry, record: r } : null;
-        }
-        if (entry.type === "panel") {
-          const r = getPanelServiceById(entry.id, panels);
-          return r ? { entry, record: r } : null;
-        }
-        const r = getRankPushById(entry.id, pushes);
-        return r ? { entry, record: r } : null;
-      })
-      .filter((x): x is ResolvedCompareEntry => x !== null);
-  }, [compare]);
+        })
+        .filter((x): x is ResolvedCompareEntry => x !== null),
+    [compare],
+  );
 
   // Auto-clear error after 3 seconds
   React.useEffect(() => {
@@ -128,31 +171,62 @@ export function CompareDock() {
                     Compare ({resolved.length}/{compareMax})
                   </span>
                   <span className="font-mono-label text-[8px] text-[var(--ink-soft)]">
-                    {resolved[0]?.entry.type === "account" ? "Account IDs" : resolved[0]?.entry.type === "panel" ? "Panel Sellers" : "Paid Push"}
+                    {COMPARE_TYPE_PLURALS[resolved[0].entry.type]}
                   </span>
                 </div>
               </div>
 
               {/* Selected items — horizontal scroll on mobile */}
               <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {resolved.map(({ entry, record }) => (
-                  <div
-                    key={entry.id}
-                    className="glass-embed flex shrink-0 items-center gap-2 rounded-full py-1 pl-2 pr-1"
-                  >
-                    <span className="max-w-[120px] truncate text-xs font-medium text-[var(--ink)] sm:max-w-[160px]">
-                      {record.title}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => toggleCompare(entry.id, entry.type)}
-                      aria-label={`Remove ${record.title} from compare`}
-                      className="glass-embed inline-flex h-6 w-6 items-center justify-center rounded-full text-[var(--ink-soft)] transition-colors hover:text-[oklch(0.68_0.2_24)]"
+                {resolved.map(({ entry, record }) => {
+                  const thumb = resolveThumb({ entry, record } as ResolvedCompareEntry);
+                  return (
+                    <div
+                      key={entry.id}
+                      className="glass-embed flex shrink-0 items-center gap-2 rounded-full py-1 pl-1 pr-1"
                     >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                      {thumb ? (
+                        <span className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full ring-1 ring-white/10">
+                          <Image
+                            src={thumb.src}
+                            alt={thumb.alt}
+                            fill
+                            sizes="28px"
+                            className="object-cover"
+                            unoptimized
+                          />
+                        </span>
+                      ) : (
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[oklch(0.3_0.1_290/0.8)] to-[oklch(0.25_0.12_196/0.8)] text-[10px]">
+                          ✦
+                        </span>
+                      )}
+                      <span className="max-w-[120px] truncate text-xs font-medium text-[var(--ink)] sm:max-w-[160px]">
+                        {record.title}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => toggleCompare(entry.id, entry.type)}
+                        aria-label={`Remove ${record.title} from compare`}
+                        className="glass-embed inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[var(--ink-soft)] transition-colors hover:text-[oklch(0.68_0.2_24)]"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+
+                {/* Type-specific "Add another X" slot (visible until max reached) */}
+                {resolved.length < compareMax && (
+                  <Link
+                    href={TYPE_HREF[resolved[0].entry.type] ?? "/services"}
+                    className="flex shrink-0 items-center gap-1.5 rounded-full border border-dashed border-[var(--accent-cyan)/40] px-3 py-1.5 text-xs font-medium text-[var(--accent-cyan)] transition-colors hover:border-[var(--accent-cyan)] hover:bg-[var(--accent-cyan)/10]"
+                    aria-label={`Add another ${COMPARE_TYPE_LABELS[resolved[0].entry.type]}`}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add another {COMPARE_TYPE_LABELS[resolved[0].entry.type]}
+                  </Link>
+                )}
               </div>
 
               {/* Actions */}

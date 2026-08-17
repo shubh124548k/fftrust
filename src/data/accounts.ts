@@ -20,7 +20,7 @@ export const accounts: AccountListing[] = [
   // {
   //   id: "ACC-1001", title: "Heroic Account — Full Collection",
   //   category: "battleground", level: 78, rank: "Heroic", region: "India",
-  //   priceInr: 4200, prime: true,
+  //   priceInr: 4200, originalPrice: 5200, prime: true,
   //   collections: ["Summer Bundle"], weapons: ["AK Dragon"],
   //   evo: ["M1014 Dragon"], emotes: ["Top Up"], bundles: ["Anime Bundle"],
   //   pets: ["Falcon"], vehicles: ["Sports Car"], badges: ["Elite"],
@@ -47,6 +47,7 @@ export const sampleAccounts: AccountListing[] = [
     rank: "Heroic",
     region: "India",
     priceInr: 4200,
+    originalPrice: 5200,
     prime: true,
     collections: ["Anime Bundle", "Summer Collection"],
     weapons: ["AK — Dragon Roar", "MP40 — Genocidal Butterfly"],
@@ -66,6 +67,10 @@ export const sampleAccounts: AccountListing[] = [
       hasRecoveryAccess: false,
       provenanceNote: "SAMPLE — bound email + receipt on file (demonstration only).",
     },
+    trustHighlights: [
+      { icon: "check", label: "PROOF AVAILABLE" },
+      { icon: "check", label: "VERIFIED EVIDENCE" },
+    ],
     media: [],
     frontImage: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=400&fit=crop",
     galleryImages: [
@@ -74,6 +79,7 @@ export const sampleAccounts: AccountListing[] = [
       "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=800&h=600&fit=crop",
       "https://images.unsplash.com/photo-1547394765-185e1e68f34e?w=800&h=600&fit=crop",
     ],
+    videoUrl: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
     terms:
       "SAMPLE terms — real listings carry the seller's actual transfer terms. Screen recording required.",
     published: true,
@@ -109,12 +115,16 @@ export const sampleAccounts: AccountListing[] = [
       hasRecoveryAccess: false,
       provenanceNote: "SAMPLE — receipt on file; bound email not included.",
     },
+    trustHighlights: [
+      { icon: "check", label: "PROOF AVAILABLE" },
+    ],
     media: [],
     frontImage: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&h=400&fit=crop",
     galleryImages: [
       "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800&h=600&fit=crop",
       "https://images.unsplash.com/photo-1556438064-2d7646166914?w=800&h=600&fit=crop",
     ],
+    videoUrl: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
     terms: "SAMPLE terms — collection-focused listing.",
     published: true,
     featured: false,
@@ -149,6 +159,9 @@ export const sampleAccounts: AccountListing[] = [
       hasRecoveryAccess: false,
       provenanceNote: "SAMPLE — bound email only; no receipt.",
     },
+    trustHighlights: [
+      { icon: "check", label: "VERIFIED EVIDENCE" },
+    ],
     media: [],
     frontImage: "https://images.unsplash.com/photo-1605379399642-870262d3d051?w=600&h=400&fit=crop",
     galleryImages: [

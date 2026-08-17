@@ -351,7 +351,7 @@ export function CompareStage({ intro, emptyNote }: { intro: string; emptyNote: s
         description={emptyNote}
         action={
           <Link
-            href={compareCount >= 2 ? "/compare" : "/#explore"}
+            href={compareCount >= 2 ? "/compare" : "/accounts"}
             className="magnetic inline-flex items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-6 py-3 text-sm font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-cyan)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
           >
             {compareCount >= 2 ? "View comparison" : "Browse listings"}

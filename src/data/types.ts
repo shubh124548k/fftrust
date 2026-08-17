@@ -40,6 +40,20 @@ export interface ListingMedia {
 export const MAX_LISTING_IMAGES = 30;
 
 /**
+ * Data-driven trust highlight. Each chip represents a claim that the
+ * canonical data explicitly supports — never fabricated. Components render
+ * these as small professional badges on cards / Details / Compare.
+ *
+ * Icon semantics: "check" = ✓ verified / proof; "zap" = ⚡ speed / performance.
+ */
+export interface TrustHighlight {
+  /** "check" renders ✓, "zap" renders ⚡. */
+  icon: "check" | "zap";
+  /** Short professional label (max ~25 chars). */
+  label: string;
+}
+
+/**
  * Simplified media fields (preferred over the flat `media: ListingMedia[]`).
  * These provide a clean, URL-only interface for the canonical data files.
  *
@@ -98,7 +112,12 @@ export interface AccountListing {
   /** Optional rank — some accounts may be unranked. */
   rank?: string;
   region: string;
+  /** Price the customer pays (INR). */
   priceInr: number;
+  /** Optional pre-discount price (INR). When set and greater than priceInr,
+   *  cards and details derive a real "SAVE ₹X • Y% OFF" badge. Never set
+   *  unless a genuine original price exists. */
+  originalPrice?: number;
   /** Prime membership flag. */
   prime?: boolean;
   /** Named collection items on the account. */
@@ -127,6 +146,8 @@ export interface AccountListing {
   featured?: boolean;
   /** SAMPLE fixture flag — never production. */
   demo?: boolean;
+  /** Data-driven trust highlights — only render when present. NEVER fabricate. */
+  trustHighlights?: TrustHighlight[];
   createdAt: ISODate;
   updatedAt: ISODate;
 }
@@ -165,6 +186,39 @@ export type ServiceCategory =
   | "account-care";
 
 /**
+ * Optional package tier for service listings (PROMPT 02 Parts 10/12).
+ * When present, the UI renders tier pricing with computed savings/discount;
+ * when absent, the single `priceInr` is shown. All values are canonical.
+ *
+ * Extended (PROMPT 5): each package now supports optional per-tier highlights,
+ * features, duration, delivery, included/excluded — only rendered when present.
+ */
+export interface ServicePackage {
+  /** Stable ID within the listing. */
+  id: string;
+  /** Tier label (e.g. "Basic", "Pro", "Premium"). */
+  label: string;
+  /** Original price in INR (before discount). */
+  originalPrice: number;
+  /** Current price in INR (what the customer pays). */
+  currentPrice: number;
+  /** Optional badge text (e.g. "BEST VALUE", "POPULAR"). */
+  badge?: string;
+  /** Short package-specific highlights — card shows max 2–3. */
+  highlights?: string[];
+  /** Longer feature list — Details shows full. */
+  features?: string[];
+  /** Duration description (e.g. "1-day access"). */
+  duration?: string;
+  /** Delivery speed description (e.g. "Within 1 hour"). */
+  delivery?: string;
+  /** Items included in this specific tier. */
+  included?: string[];
+  /** Items excluded from this specific tier. */
+  excluded?: string[];
+}
+
+/**
  * Panel Seller service record. Legitimate service marketplace: service ID,
  * title, category, priceInr, scope, requirements, included/excluded, media,
  * evidence, seller reference, terms, tags and publication state.
@@ -178,6 +232,8 @@ export interface PanelSellerService {
   included: string[];
   excluded: string[];
   priceInr: number;
+  /** Optional package tiers — when present, package pricing overrides single price. */
+  packages?: ServicePackage[];
   tags: string[];
   sellerRef: string;
   media: ListingMedia[];
@@ -191,6 +247,8 @@ export interface PanelSellerService {
   published: boolean;
   featured?: boolean;
   demo?: boolean;
+  /** Data-driven trust highlights — only render when present. NEVER fabricate. */
+  trustHighlights?: TrustHighlight[];
   createdAt: ISODate;
   updatedAt: ISODate;
 }
@@ -219,6 +277,8 @@ export interface PaidPushService {
   scope: string;
   requirements: string[];
   priceInr: number;
+  /** Optional package tiers — when present, package pricing overrides single price. */
+  packages?: ServicePackage[];
   tags: string[];
   sellerRef: string;
   media: ListingMedia[];
@@ -234,6 +294,8 @@ export interface PaidPushService {
   published: boolean;
   featured?: boolean;
   demo?: boolean;
+  /** Data-driven trust highlights — only render when present. NEVER fabricate. */
+  trustHighlights?: TrustHighlight[];
   createdAt: ISODate;
   updatedAt: ISODate;
 }
@@ -269,6 +331,26 @@ export interface InstagramServiceType {
   /** WhatsApp number for orders (E.164 format without +). */
   whatsappNumber: string;
   packages: InstagramPackage[];
+  /** Data-driven trust highlights — only render when present. NEVER fabricate. */
+  trustHighlights?: TrustHighlight[];
+}
+
+/** Instagram growth category metadata (hub tile). `status` gates the tile:
+ *  live categories link to their real route; coming-soon categories render
+ *  locked and NEVER navigate to a fake destination. */
+export interface InstagramCategoryMeta {
+  /** Stable key (also the iconKey lookup). */
+  key: string;
+  label: string;
+  shortLabel: string;
+  emoji?: string;
+  iconKey?: string;
+  /** Live categories link here — omitted for coming-soon tiles. */
+  href?: string;
+  description?: string;
+  status: "live" | "coming-soon";
+  /** Plural unit label for counts (e.g. "packages", "videos"). */
+  unit: string;
 }
 
 /* ============================================================

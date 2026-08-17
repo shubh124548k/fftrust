@@ -31,6 +31,20 @@ export function InstagramOrderModal({ open, onClose, service, pkg }: InstagramOr
   const [note, setNote] = React.useState("");
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
+  // Reset the form when the modal opens or the selected package changes.
+  // Derived during render so no synchronous state updates run in an effect.
+  const [prevSession, setPrevSession] = React.useState<{ open: boolean; pkg: InstagramPackageWithSavings | null }>({ open, pkg });
+  if (open !== prevSession.open || pkg !== prevSession.pkg) {
+    setPrevSession({ open, pkg });
+    if (open) {
+      setCustomerName("");
+      setInstagramUsername("");
+      setWhatsappNumber("");
+      setNote("");
+      setErrors({});
+    }
+  }
+
   React.useEffect(() => {
     if (!open) return;
     lockBodyScroll();
@@ -45,16 +59,6 @@ export function InstagramOrderModal({ open, onClose, service, pkg }: InstagramOr
       cancelAnimationFrame(id);
     };
   }, [open, onClose]);
-
-  React.useEffect(() => {
-    if (open) {
-      setCustomerName("");
-      setInstagramUsername("");
-      setWhatsappNumber("");
-      setNote("");
-      setErrors({});
-    }
-  }, [open, pkg]);
 
   if (!open || !pkg) return null;
 

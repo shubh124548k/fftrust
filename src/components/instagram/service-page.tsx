@@ -2,19 +2,19 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, ChevronDown, Zap, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ChevronDown, Zap, ShieldCheck, PackageSearch } from "lucide-react";
 import { RevealText } from "@/components/visual/reveal-text";
-import { MagneticButton } from "@/components/visual/magnetic-button";
 import { InstagramOrderModal } from "@/components/instagram/order-modal";
+import { InstagramPackageCard } from "@/components/instagram/instagram-package-card";
+import { EmptyState } from "@/components/visual/empty-state";
 import {
-  formatPrice,
   sortInstagramPackages,
   type InstagramPackageWithSavings,
   type InstagramSortKey,
 } from "@/lib/selectors/instagram";
 import type { InstagramServiceType } from "@/data/types";
-import { cn } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { PRICE_SORT_OPTIONS } from "@/lib/design/constants";
 
 /**
  * FF TRUST — Shared Instagram service page (Views / Followers / Likes).
@@ -23,25 +23,20 @@ import { Breadcrumbs } from "@/components/layout/breadcrumbs";
  * clone: same navbar, dropdown, hamburger, background, typography, Holo-Chrome
  * cards, animations, spacing, order button, order modal, WhatsApp flow,
  * validation and responsive behavior. Only the data and per-service labels
- * change (hero word, card label, hero icon, canonical packages).
+ * change (hero word, hero icon, canonical packages).
  */
-const SORT_OPTIONS: { value: InstagramSortKey; label: string }[] = [
-  { value: "price-desc", label: "Price · High to Low" },
-  { value: "price-asc", label: "Price · Low to High" },
-];
+const SORT_OPTIONS = PRICE_SORT_OPTIONS as { value: InstagramSortKey; label: string }[];
 
 export function InstagramServicePage({
   service,
   packages,
   heroIcon,
   heroWord,
-  cardLabel,
 }: {
   service: InstagramServiceType;
   packages: InstagramPackageWithSavings[];
   heroIcon: React.ReactNode;
   heroWord: string;
-  cardLabel: string;
 }) {
   const [selectedPkg, setSelectedPkg] = React.useState<InstagramPackageWithSavings | null>(null);
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -63,7 +58,7 @@ export function InstagramServicePage({
         {/* Breadcrumbs */}
         <Breadcrumbs
           items={[
-            { label: "Instagram" },
+            { label: "Instagram", href: "/instagram" },
             {
               label:
                 service.key === "followers"
@@ -130,13 +125,25 @@ export function InstagramServicePage({
         </div>
 
         {/* Pricing cards grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {sortedPackages.map((pkg, i) => (
-            <RevealText key={pkg.id} delay={Math.min(i * 40, 300)}>
-              <PriceCard pkg={pkg} cardLabel={cardLabel} onOrder={() => handleOrder(pkg)} />
-            </RevealText>
-          ))}
-        </div>
+        {sortedPackages.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {sortedPackages.map((pkg, i) => (
+              <RevealText key={pkg.id} delay={Math.min(i * 40, 300)}>
+                <InstagramPackageCard
+                  service={service}
+                  pkg={pkg}
+                  onOpen={() => handleOrder(pkg)}
+                />
+              </RevealText>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon={<PackageSearch className="h-6 w-6" />}
+            title={`No ${heroWord.toLowerCase()} packages available yet`}
+            description="When the owner publishes real Instagram packages, they will appear here automatically. FF TRUST never displays fake inventory."
+          />
+        )}
 
         {/* Trust / Safety banner */}
         <div className="mt-16">
@@ -184,86 +191,5 @@ export function InstagramServicePage({
         pkg={selectedPkg}
       />
     </main>
-  );
-}
-
-/* ============================================================
- * PRICE CARD — premium 3D Holo-Chrome pricing card
- * ============================================================ */
-function PriceCard({
-  pkg,
-  cardLabel,
-  onOrder,
-}: {
-  pkg: InstagramPackageWithSavings;
-  cardLabel: string;
-  onOrder: () => void;
-}) {
-  const hasBadge = !!pkg.badge;
-  const badgeTone = pkg.badge === "BEST VALUE" ? "cyan" : pkg.badge === "POPULAR" ? "violet" : "azure";
-
-  return (
-    <div
-      className="glass-stack acrylic-sheen group relative flex flex-col overflow-hidden rounded-2xl transition-transform duration-300 hover:-translate-y-1"
-      style={{ boxShadow: "var(--glass-shadow)" }}
-    >
-      {/* Light sweep on hover */}
-      <div aria-hidden className="sheen-sweep absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-      {/* Badge */}
-      {hasBadge && (
-        <div className="absolute right-0 top-0 z-10">
-          <span
-            className={cn(
-              "rounded-bl-xl rounded-tr-2xl px-3 py-1 text-[9px] font-bold uppercase tracking-wide",
-              badgeTone === "cyan" && "bg-[oklch(0.74_0.15_196)] text-[oklch(0.12_0.02_245)]",
-              badgeTone === "violet" && "bg-[oklch(0.6_0.19_290)] text-white",
-              badgeTone === "azure" && "bg-[oklch(0.62_0.16_258)] text-white",
-            )}
-          >
-            {pkg.badge}
-          </span>
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="flex flex-1 flex-col p-5">
-        {/* Quantity */}
-        <p className="font-mono-label text-[9px] text-[var(--accent-azure)]">{cardLabel}</p>
-        <p className="mt-1 font-heading text-2xl font-bold text-[var(--ink)]">
-          {pkg.formattedQuantity}
-        </p>
-
-        {/* Prices */}
-        <div className="mt-4 flex items-baseline gap-2">
-          <span className="text-sm text-[var(--ink-soft)] line-through">{formatPrice(pkg.originalPrice)}</span>
-        </div>
-        <p className="font-heading text-3xl font-bold text-gradient-cyan">
-          {formatPrice(pkg.discountPrice)}
-        </p>
-
-        {/* Savings */}
-        <div className="mt-3 flex items-center gap-2">
-          <span className="rounded-full bg-[oklch(0.55_0.14_160/0.15)] px-2.5 py-1 text-[10px] font-semibold text-[oklch(0.65_0.14_160)]">
-            SAVE {formatPrice(pkg.savingAmount)}
-          </span>
-          <span className="rounded-full bg-[oklch(0.55_0.14_160/0.15)] px-2.5 py-1 text-[10px] font-semibold text-[oklch(0.65_0.14_160)]">
-            SAVE {pkg.savingPercentage}%
-          </span>
-        </div>
-
-        {/* Order button */}
-        <div className="mt-auto pt-5">
-          <MagneticButton
-            onClick={onOrder}
-            className="w-full"
-            strength={6}
-          >
-            Order Now
-            <ArrowRight className="h-4 w-4" />
-          </MagneticButton>
-        </div>
-      </div>
-    </div>
   );
 }

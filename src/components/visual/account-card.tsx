@@ -4,26 +4,25 @@ import * as React from "react";
 import {
   ArrowUpRight,
   ShieldCheck,
-  Mail,
-  Receipt,
-  KeyRound,
   Crown,
   Sword,
   Sparkles,
+  Play,
   Heart,
   Columns3,
-  ImageOff,
 } from "lucide-react";
-import { GlassCard } from "./glass-panel";
-import { HoloChromeCard, FloatingPricePlate, MediaStage } from "./holo-chrome-card";
-import { StatusChip, PricePlate, EvidenceChip } from "./status-chip";
+import { HoloChromeCard } from "./holo-chrome-card";
+import { StatusChip } from "./status-chip";
+import { TrustHighlights } from "./trust-highlights";
+import { PriceDisplay } from "./price-display";
+import { CardMediaStage } from "./card-media-stage";
+import { SellerBadge } from "./seller-badge";
+import { ImageLightbox } from "./image-lightbox";
 import type { AccountListing } from "@/data/types";
 import { buildWhatsAppUrl, accountWhatsAppContext } from "@/lib/whatsapp";
-import { siteConfig } from "@/config/site";
 import { useFavoritesStore } from "@/stores/favorites";
 import { useDetailStore } from "@/stores/detail";
 import { resolveListingMedia, getListingAllImages } from "@/lib/media";
-import { ImageLightbox } from "./image-lightbox";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,17 +34,23 @@ import { cn } from "@/lib/utils";
  *  • focus       — cyan focus-visible ring
  *  • active      — press scale-down
  *  • featured    — holo border + Featured chip
- *  • media-rich  — real image stage with lazy load + reserved aspect
+ *  • media-rich  — rotating media stage (cover → gallery, 5s crossfade)
  *  • no-media    — decorative crystalline gradient + motif
  *  • unavailable — published=false overlay (archived)
- *  • archived    — demo badge + SAMPLE frame
  *
- * Controlled depth variation by card role (featured gets pedestal+holo,
- * regular gets base, no-media gets float). Favorite + compare toggles persist
- * via Zustand. View Details link scrolls to the record (future detail route).
- * A premium card remains readable with animation disabled (reduced-motion).
+ * PROMPT 03 repair contract:
+ *  - WHAT: title · WHO: prominent Seller: badge · KEY HIGHLIGHTS: level/rank/
+ *    Prime/counts · VIDEO: stage badge cue · PRICE: 3-part (struck original +
+ *    current + SAVE badge, auto-derived) · COMPARE: card toggle · OPEN-BUY:
+ *    Inquire + Details.
+ *  - Wishlist + compare use the single persisted Zustand store (synced with
+ *    details + tray + navbar counts). Child controls never trigger parent nav.
+ *  - Evidence/provenance lives in the Detail dossier — not the card.
  */
 export type AccountCardVariant = "default" | "featured" | "compact" | "no-media";
+
+const ACCOUNT_FALLBACK_GRADIENT =
+  "linear-gradient(135deg, oklch(0.82 0.1 200 / 0.35) 0%, oklch(0.7 0.12 290 / 0.22) 50%, oklch(0.9 0.02 245 / 0.5) 100%)";
 
 export function AccountCard({
   record,
@@ -72,15 +77,13 @@ export function AccountCard({
   const weaponCount = record.weapons?.length ?? 0;
   const collectionCount = record.collections?.length ?? 0;
   const evoCount = record.evo?.length ?? 0;
-  const { frontImage, frontImageAlt, videoUrl } = resolveListingMedia(record, record.title);
-  const hasRealMedia = !!frontImage;
+  const { frontImage, videoUrl } = resolveListingMedia(record, record.title);
+  // All lightbox images — shared helper (deduplicated, validated, max 30)
+  const allImages = getListingAllImages(record, record.title);
   const isFeatured = !!record.featured && !record.demo;
   const isUnavailable = !record.published;
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
-  // All lightbox images — shared helper (deduplicated, validated, max 30)
-  const allImages = getListingAllImages(record, record.title);
 
-  // Controlled depth variation by role — not identical tilt.
   const chromeVariant = isFeatured ? "featured" : isUnavailable ? "unavailable" : variant === "compact" ? "compact" : "default";
 
   return (
@@ -90,84 +93,28 @@ export function AccountCard({
       className={cn("group flex flex-col", className)}
       aria-label={`Account ${record.title}`}
     >
-      {/* Media stage — MEDIUM sized, premium product-card proportion.
-          Uses clamp() for fluid responsive sizing without breakpoints.
-          Mobile: ~120px, Desktop: ~180px — balanced, premium. */}
+      {/* Media stage — MEDIUM sized, premium product-card proportion */}
       <div
         className="relative w-full overflow-hidden rounded-t-3xl"
         style={{ height: "clamp(120px, 24vw, 180px)" }}
       >
-        {hasRealMedia && frontImage ? (
-          <button
-            type="button"
-            aria-label={`View images for ${record.title}`}
-            onClick={(e) => {
-              e.preventDefault();
-              setLightboxOpen(true);
-            }}
-            className="absolute inset-0 z-[1] cursor-pointer"
-          >
-            <img
-              src={frontImage}
-              alt={frontImageAlt}
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onError={(e) => {
-                const t = e.currentTarget;
-                t.style.display = "none";
-                const fallback = t.parentElement?.nextElementSibling as HTMLElement | null;
-                if (fallback) fallback.style.display = "block";
-              }}
-            />
-          </button>
-        ) : null}
-        {/* Decorative fallback (also shown when no media or broken) */}
-        <div
-          aria-hidden
-          className={cn("absolute inset-0", hasRealMedia && "hidden")}
-          style={{
-            background:
-              "linear-gradient(135deg, oklch(0.82 0.1 200 / 0.35) 0%, oklch(0.7 0.12 290 / 0.22) 50%, oklch(0.9 0.02 245 / 0.5) 100%)",
-          }}
-        >
-          {/* Floating crystalline motif (decorative, not evidence) */}
-          <svg
-            aria-hidden
-            className="drift-float absolute right-4 top-4 opacity-70"
-            width="84"
-            height="84"
-            viewBox="0 0 84 84"
-            fill="none"
-          >
-            <polygon
-              points="42,8 72,26 72,58 42,76 12,58 12,26"
-              stroke="oklch(1 0 0 / 0.7)"
-              strokeWidth="1"
-              fill="oklch(1 0 0 / 0.12)"
-            />
-            <polygon
-              points="42,22 60,33 60,51 42,62 24,51 24,33"
-              stroke="oklch(0.74 0.15 196 / 0.6)"
-              strokeWidth="0.8"
-              fill="none"
-            />
-          </svg>
-          {!hasRealMedia && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <ImageOff className="h-6 w-6 text-[var(--ink-soft)] opacity-40" />
-            </div>
-          )}
-        </div>
+        <CardMediaStage
+          images={allImages}
+          frontImage={frontImage}
+          title={record.title}
+          fallbackGradient={ACCOUNT_FALLBACK_GRADIENT}
+          onOpenLightbox={() => setLightboxOpen(true)}
+        />
 
-        {/* Top-left badges — Featured + Unavailable only (no SAMPLE in production) */}
-        <div className="absolute left-3 top-3 flex max-w-[calc(100%-5.5rem)] flex-nowrap gap-1.5 overflow-hidden sm:left-4 sm:top-4 sm:max-w-none sm:flex-wrap">
+        {/* Top-left badges — Featured + Unavailable + Video only */}
+        <div className="absolute left-3 top-3 z-[2] flex max-w-[calc(100%-5.5rem)] flex-nowrap gap-1.5 overflow-hidden sm:left-4 sm:top-4 sm:max-w-none sm:flex-wrap">
           {isFeatured && <StatusChip tone="cyan" icon={<Sparkles className="h-3 w-3" />}>Featured</StatusChip>}
           {isUnavailable && <StatusChip tone="neutral">Unavailable</StatusChip>}
+          {videoUrl && <StatusChip tone="azure" icon={<Play className="h-3 w-3" />}>Video</StatusChip>}
         </div>
 
-        {/* Top-right action toggles — favorite + compare */}
-        <div className="absolute right-2.5 top-2.5 flex gap-1.5 sm:right-3 sm:top-3">
+        {/* Top-right action toggles — favorite + compare (single persisted state) */}
+        <div className="absolute right-2.5 top-2.5 z-[2] flex gap-1.5 sm:right-3 sm:top-3">
           <button
             type="button"
             aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -201,19 +148,23 @@ export function AccountCard({
         </div>
 
         {/* Bottom-left category chip */}
-        <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4">
+        <div className="absolute bottom-3 left-3 z-[2] sm:bottom-4 sm:left-4">
           <StatusChip tone="cyan" icon={<ShieldCheck className="h-3 w-3" />}>
             {record.category}
           </StatusChip>
         </div>
 
-        {/* Floating price plate — bottom-right, constrained width on mobile */}
-        <div className="absolute -bottom-px right-3 max-w-[calc(100%-1.5rem)] sm:right-4">
+        {/* Floating price plate — 3-part price (struck original + current + SAVE) */}
+        <div className="absolute -bottom-px right-3 z-[2] max-w-[calc(100%-1.5rem)] sm:right-4">
           <div
             className="glass-float rounded-xl px-2.5 py-1.5 sm:rounded-2xl sm:px-3 sm:py-2"
             style={{ boxShadow: "var(--glass-shadow-lift)" }}
           >
-            <PricePlate value={record.priceInr} size="sm" />
+            <PriceDisplay
+              currentPrice={record.priceInr}
+              originalPrice={record.originalPrice}
+              size="sm"
+            />
           </div>
         </div>
       </div>
@@ -227,16 +178,16 @@ export function AccountCard({
           <p className="mt-0.5 font-mono-label text-[9px] text-[var(--ink-soft)] sm:mt-1 sm:text-[10px]">
             {record.id} · {record.region}
           </p>
+          <SellerBadge sellerRef={record.sellerRef} showLabel className="mt-1.5" />
         </div>
 
-        {/* Data chips — level/rank always shown, counts only on sm+ */}
+        {/* Key highlights — level/rank always shown, counts only on sm+ */}
         <div className="flex flex-wrap gap-1">
           <StatusChip tone="azure">Lvl {record.level}</StatusChip>
           {record.rank && <StatusChip tone="violet">{record.rank}</StatusChip>}
           {record.prime && (
             <StatusChip tone="cyan" icon={<Crown className="h-3 w-3" />}>Prime</StatusChip>
           )}
-          {/* Counts shown only on sm+ to keep mobile cards compact */}
           {collectionCount > 0 && (
             <StatusChip tone="neutral"><span className="hidden sm:inline">Collections · </span>{collectionCount}</StatusChip>
           )}
@@ -248,19 +199,10 @@ export function AccountCard({
           )}
         </div>
 
-        {/* Evidence treatment — honest provenance, never a guarantee.
-            Hidden on mobile (shown in detail view) to keep cards compact. */}
-        <div className="hidden flex-wrap gap-1.5 border-t border-[var(--border)] pt-3 sm:flex">
-          <EvidenceChip label="Bound email" present={record.evidence.hasBoundEmail} icon={<Mail className="h-3 w-3" />} />
-          <EvidenceChip label="Receipt" present={record.evidence.hasOriginalReceipt} icon={<Receipt className="h-3 w-3" />} />
-          <EvidenceChip label="Recovery" present={record.evidence.hasRecoveryAccess} icon={<KeyRound className="h-3 w-3" />} />
-        </div>
-        {/* Disclaimer — hidden on mobile, shown on sm+ */}
-        <p className="font-mono-label hidden text-[9px] leading-relaxed text-[var(--ink-soft)] sm:block">
-          {siteConfig.trustDisclaimer}
-        </p>
+        {/* Trust highlights — data-driven, never fabricated */}
+        <TrustHighlights items={record.trustHighlights} max={3} className="mt-1" />
 
-        {/* Actions — WhatsApp + View Details */}
+        {/* Actions — Inquire + View Details */}
         <div className="mt-auto flex items-center gap-1.5 pt-0.5 sm:gap-2 sm:pt-1">
           <a
             href={wa}
@@ -283,7 +225,7 @@ export function AccountCard({
       </div>
     </HoloChromeCard>
 
-    {/* Image Lightbox — beautiful fullscreen gallery viewer */}
+    {/* Media Lightbox — unified gallery viewer (images + video, one sequence) */}
     <ImageLightbox
       images={allImages}
       videoUrl={videoUrl}

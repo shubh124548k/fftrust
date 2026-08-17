@@ -94,7 +94,7 @@ export function searchAccounts(
   query: string,
   source?: AccountListing[],
 ): AccountListing[] {
-  const pool = getPublishedAccounts(source);
+  const pool = source ?? getPublishedAccounts();
   return searchBy(pool, query, (a) => [
     a.title,
     a.description ?? "",
@@ -107,12 +107,13 @@ export function searchAccounts(
   ]);
 }
 
-/** Apply a compound filter to published accounts. */
+/** Apply a compound filter to accounts. Uses provided source directly;
+ *  falls back to published accounts when no source is given. */
 export function filterAccounts(
   f: AccountFilter,
   source?: AccountListing[],
 ): AccountListing[] {
-  let pool = getPublishedAccounts(source);
+  let pool = source ?? getPublishedAccounts();
   if (f.category && f.category !== "all") pool = pool.filter((a) => a.category === f.category);
   if (f.tag) pool = pool.filter((a) => a.tags.includes(f.tag!));
   if (typeof f.prime === "boolean") pool = pool.filter((a) => !!a.prime === f.prime);
@@ -144,41 +145,42 @@ export function sortAccounts(
 /* ---------------- Dynamic discovery ---------------- */
 
 export function getAccountCategories(source?: AccountListing[]): AccountCategory[] {
-  return discoverDistinct(getPublishedAccounts(source), (a) => a.category);
+  return discoverDistinct(source ?? getPublishedAccounts(), (a) => a.category);
 }
 
 export function getAccountTags(source?: AccountListing[]): string[] {
-  return discoverDistinct(getPublishedAccounts(source), (a) => a.tags);
+  return discoverDistinct(source ?? getPublishedAccounts(), (a) => a.tags);
 }
 
 export function getAccountRanks(source?: AccountListing[]): string[] {
-  return discoverDistinct(getPublishedAccounts(source), (a) => a.rank);
+  return discoverDistinct(source ?? getPublishedAccounts(), (a) => a.rank);
 }
 
 export function getAccountRegions(source?: AccountListing[]): string[] {
-  return discoverDistinct(getPublishedAccounts(source), (a) => a.region);
+  return discoverDistinct(source ?? getPublishedAccounts(), (a) => a.region);
 }
 
-/** Discover distinct collection names across published accounts. */
+/** Discover distinct collection names across accounts. */
 export function getAccountCollections(source?: AccountListing[]): string[] {
-  return discoverDistinct(getPublishedAccounts(source), (a) => a.collections ?? []);
+  return discoverDistinct(source ?? getPublishedAccounts(), (a) => a.collections ?? []);
 }
 
-/** Discover distinct weapon names across published accounts. */
+/** Discover distinct weapon names across accounts. */
 export function getAccountWeapons(source?: AccountListing[]): string[] {
-  return discoverDistinct(getPublishedAccounts(source), (a) => a.weapons ?? []);
+  return discoverDistinct(source ?? getPublishedAccounts(), (a) => a.weapons ?? []);
 }
 
-/** Discover distinct Evo names across published accounts. */
+/** Discover distinct Evo names across accounts. */
 export function getAccountEvo(source?: AccountListing[]): string[] {
-  return discoverDistinct(getPublishedAccounts(source), (a) => a.evo ?? []);
+  return discoverDistinct(source ?? getPublishedAccounts(), (a) => a.evo ?? []);
 }
 
 /* ---------------- Derived aggregates ---------------- */
 
 /** Price bounds for the Price Guide — derived from real published data only. */
 export function getAccountPriceBounds(source?: AccountListing[]): PriceBounds {
-  const prices = getPublishedAccounts(source).map((a) => a.priceInr);
+  const pool = source ?? getPublishedAccounts();
+  const prices = pool.map((a) => a.priceInr);
   if (prices.length === 0) return { min: 0, max: 0, count: 0 };
   return { min: Math.min(...prices), max: Math.max(...prices), count: prices.length };
 }
@@ -196,7 +198,7 @@ export function getRelatedAccounts(
   limit = 4,
   source?: AccountListing[],
 ): AccountListing[] {
-  const pool = getPublishedAccounts(source);
+  const pool = source ?? getPublishedAccounts();
   const ref = pool.find((a) => a.id === id);
   if (!ref) return [];
   return pool
@@ -237,9 +239,10 @@ export function getListingVideos(a: AccountListing): string[] {
 /* ---------------- Shareable URL state ---------------- */
 
 /**
- * Serialize an AccountFilter + sort to a URL hash string for shareable state.
- * Omits undefined/empty values so the URL stays clean. Format:
- * #explore?q=heroic&cat=battleground&prime=1&sort=price-asc&min=1000&max=5000
+ * Serialize an AccountFilter + sort to a query string for shareable state on
+ * the /accounts catalogue page. Omits undefined/empty values so the URL stays
+ * clean. Format:
+ * ?q=heroic&cat=battleground&prime=1&sort=price-asc&min=1000&max=5000
  */
 export function serializeFilterState(
   f: AccountFilter,
@@ -260,7 +263,7 @@ export function serializeFilterState(
   if (typeof f.minLevel === "number") params.set("lvl", String(f.minLevel));
   if (sort !== "newest") params.set("sort", sort);
   const s = params.toString();
-  return s ? `#explore?${s}` : "#explore";
+  return s ? `?${s}` : "";
 }
 
 /** Parse a URL hash back into an AccountFilter + sort. */

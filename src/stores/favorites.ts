@@ -19,7 +19,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
  * cross-type attempt is made.
  */
 
-export type ListingType = "account" | "panel" | "paid-push";
+export type ListingType = "account" | "panel" | "paid-push" | "instagram";
 
 interface CompareEntry {
   id: string;
@@ -40,14 +40,32 @@ interface FavoritesState {
   clearFavorites: () => void;
   clearCompare: () => void;
   clearCompareError: () => void;
-  /** Max 4 in compare tray to keep the comparison readable. */
+  /**
+   * Max 2 in compare tray — keeps the comparison readable and the tray
+   * compact (PROMPT 4: "Compare up to 2 X" message contract).
+   */
   readonly compareMax: number;
 }
 
-const TYPE_LABELS: Record<ListingType, string> = {
-  account: "Account ID",
-  panel: "Panel Seller",
+/**
+ * Single source of truth for type-specific compare labels used across the
+ * tray, compare page and store errors (PROMPT 4: "Compare up to 2 Free Fire
+ * IDs", "Add another Free Fire ID" / "Add another Panel" / "Add another Paid
+ * Push").
+ */
+export const COMPARE_TYPE_LABELS: Record<ListingType, string> = {
+  account: "Free Fire ID",
+  panel: "Panel",
   "paid-push": "Paid Push",
+  instagram: "Instagram package",
+};
+
+/** Proper plural forms for the type labels — naive `+ "s"` breaks "Paid Push". */
+export const COMPARE_TYPE_PLURALS: Record<ListingType, string> = {
+  account: "Free Fire IDs",
+  panel: "Panels",
+  "paid-push": "Paid Pushes",
+  instagram: "Instagram packages",
 };
 
 export const useFavoritesStore = create<FavoritesState>()(
@@ -57,7 +75,7 @@ export const useFavoritesStore = create<FavoritesState>()(
       compare: [],
       compareType: null,
       compareError: null,
-      compareMax: 4,
+      compareMax: 2,
       toggleFavorite: (id) =>
         set((s) => ({
           favorites: s.favorites.includes(id)
@@ -79,11 +97,15 @@ export const useFavoritesStore = create<FavoritesState>()(
           // Check type compatibility
           if (s.compareType !== null && s.compareType !== type) {
             return {
-              compareError: `Compare ${TYPE_LABELS[s.compareType]}s with other ${TYPE_LABELS[s.compareType]}s only.`,
+              compareError: `Compare ${COMPARE_TYPE_PLURALS[s.compareType]} with other ${COMPARE_TYPE_PLURALS[s.compareType]} only.`,
             };
           }
           // Check max capacity
-          if (s.compare.length >= s.compareMax) return s;
+          if (s.compare.length >= s.compareMax) {
+            return {
+              compareError: `Compare is limited to ${s.compareMax} ${COMPARE_TYPE_PLURALS[s.compareType ?? type]} at once.`,
+            };
+          }
           return {
             compare: [...s.compare, { id, type }],
             compareType: type,

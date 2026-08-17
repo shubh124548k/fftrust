@@ -17,7 +17,14 @@ const fs = require("fs");
 const path = require("path");
 
 const BASE = "http://localhost:1111";
-const EDGE = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+const CANDIDATE_BROWSERS = [
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+];
+const BROWSER = CANDIDATE_BROWSERS.find((p) => fs.existsSync(p));
+if (!BROWSER) { console.error("No browser found for Puppeteer"); process.exit(1); }
 const ROOT = path.resolve(__dirname, "..");
 const WIDTHS = [320, 390, 430, 768, 1440];
 
@@ -95,7 +102,7 @@ function parsePrice(text) {
   check("no UI component hardcodes a video URL (SafeVideo is the only exception)", onlySafeVideo, JSON.stringify(hardcoded));
 
   // ---- 2+3. Browser: canonical price / wishlist / compare / single video component ----
-  const browser = await puppeteer.launch({ executablePath: EDGE, headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
+  const browser = await puppeteer.launch({ executablePath: BROWSER, headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
   const page = await browser.newPage();
   const consoleErrors = [];
   page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
@@ -104,7 +111,7 @@ function parsePrice(text) {
   const TITLE = "SAMPLE — Starter Vault";
 
   await page.setViewport({ width: 1440, height: 900 });
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(`${BASE}/accounts`, { waitUntil: "networkidle0", timeout: 60000 });
   await sleep(700);
 
   // 2) Price is canonical: card === data
@@ -153,8 +160,8 @@ function parsePrice(text) {
     if (b) b.click();
   }, TITLE);
 
-  // 3) Details: canonical price + videoUrl flows into a Video section BELOW the
-  //    image gallery via SafeVideo
+  // 3) Details: canonical price + videoUrl flows into the unified gallery
+  //    (image + video tiles) via the ONE SafeVideo component
   await page.evaluate((t) => {
     const b = Array.from(document.querySelectorAll("button")).find((x) => (x.getAttribute("aria-label") || "") === `View details for ${t}`);
     if (b) b.click();
@@ -168,11 +175,21 @@ function parsePrice(text) {
 
   const gallery = await page.evaluate(() => {
     const d = document.querySelector('[role="dialog"][aria-label="Account detail"]');
-    return d ? d.querySelectorAll('button[aria-label^="View media"]').length : 0;
+    return {
+      images: d ? d.querySelectorAll('button[aria-label^="View media"]').length : 0,
+      videos: d ? d.querySelectorAll('button[aria-label^="Play video"]').length : 0,
+    };
   });
-  check("Details image gallery is images-only (2 thumbnails)", gallery === 2, JSON.stringify(gallery));
+  check("Details gallery has 2 image thumbnails (images-only count)", gallery.images === 2, JSON.stringify(gallery));
+  check("Details gallery shows the VIDEO tile", gallery.videos === 1, JSON.stringify(gallery));
 
-  // video renders BELOW the gallery, not inside the image carousel
+  // activate the video tile → SafeVideo mounts the embed inside the SAME dialog
+  await page.evaluate(() => {
+    const d = document.querySelector('[role="dialog"][aria-label="Account detail"]');
+    const b = d && Array.from(d.querySelectorAll('button[aria-label^="Play video"]')).find((x) => (x.getAttribute("aria-label") || "").startsWith("Play video"));
+    if (b) b.click();
+  });
+  await sleep(600);
   const galleryVideo = await page.evaluate(() => {
     const d = document.querySelector('[role="dialog"][aria-label="Account detail"]');
     const iframe = d.querySelector("iframe");
@@ -181,30 +198,30 @@ function parsePrice(text) {
       src: iframe ? iframe.getAttribute("src") : null,
       sandboxed: iframe ? iframe.hasAttribute("sandbox") : false,
       nativeSrc: video ? video.getAttribute("src") : null,
-      videoLabel: (d.textContent || "").includes("Video"),
+      videoLabel: (d.textContent || "").includes("VIDEO"),
     };
   });
-  check("Details video section renders below gallery (Video label)", galleryVideo.videoLabel);
+  check("Details video label renders (VIDEO tile)", galleryVideo.videoLabel);
   check("Details video is youtube-nocookie embed", !!galleryVideo.src && galleryVideo.src.includes("youtube-nocookie.com/embed/"), JSON.stringify(galleryVideo));
   check("Details video uses the ONE SafeVideo component (sandbox marker)", galleryVideo.sandboxed);
   check("Details video never renders a raw <video src>", !galleryVideo.nativeSrc);
 
-  // 3b) Card lightbox video popup also uses the same SafeVideo component
+  // 3b) Card lightbox video tile also uses the same SafeVideo component
   await page.keyboard.press("Escape");
   await sleep(300);
   await page.evaluate((t) => {
     const card = document.querySelector(`[aria-label="Account ${t}"]`);
-    const b = Array.from(card.querySelectorAll("button")).find((x) => (x.getAttribute("aria-label") || "") === "View images for " + t);
+    const b = Array.from(card.querySelectorAll("button")).find((x) => (x.getAttribute("aria-label") || "") === "View media for " + t);
     if (b) b.click();
   }, TITLE);
   await sleep(500);
   await page.evaluate(() => {
-    const b = Array.from(document.querySelectorAll("button")).find((x) => (x.getAttribute("aria-label") || "") === "Open video");
+    const b = Array.from(document.querySelectorAll("button")).find((x) => (x.getAttribute("aria-label") || "") === "Play video");
     if (b) b.click();
   });
   await sleep(500);
   const lbVideo = await page.evaluate((t) => {
-    const d = document.querySelector(`[aria-label="${t} — video"]`);
+    const d = document.querySelector(`[aria-label="${t} — media gallery"]`);
     if (!d) return null;
     const iframe = d.querySelector("iframe");
     const video = d.querySelector("video");
@@ -214,9 +231,9 @@ function parsePrice(text) {
       nativeSrc: video ? video.getAttribute("src") : null,
     };
   }, TITLE);
-  check("lightbox video popup is youtube-nocookie embed", !!lbVideo.src && lbVideo.src.includes("youtube-nocookie.com/embed/"), JSON.stringify(lbVideo));
-  check("lightbox video popup uses the ONE SafeVideo component (sandbox marker)", !!(lbVideo && lbVideo.sandboxed));
-  check("lightbox video popup never renders a raw <video src>", !!(lbVideo && !lbVideo.nativeSrc));
+  check("lightbox video is youtube-nocookie embed", !!lbVideo.src && lbVideo.src.includes("youtube-nocookie.com/embed/"), JSON.stringify(lbVideo));
+  check("lightbox video uses the ONE SafeVideo component (sandbox marker)", !!(lbVideo && lbVideo.sandboxed));
+  check("lightbox video never renders a raw <video src>", !!(lbVideo && !lbVideo.nativeSrc));
 
   // 6) No horizontal overflow with lightbox/video open, mobile + desktop
   await page.keyboard.press("Escape");

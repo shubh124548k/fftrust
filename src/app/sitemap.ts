@@ -1,21 +1,17 @@
 import type { MetadataRoute } from "next";
 import { siteConfig } from "@/config/site";
-import { getFeaturedAccounts } from "@/lib/selectors/accounts";
-import {
-  getFeaturedPanelServices,
-  getFeaturedRankPush,
-} from "@/lib/selectors/services";
 
 /**
  * FF TRUST — Dynamic Sitemap (PROMPT 3).
  *
  * Automatically reflects legitimate canonical pages:
- *  - Home + full catalogue routes
+ *  - Home + full catalogue routes (/accounts, /services, /paid-push)
  *  - Instagram service routes
  *  - Legal / trust / contact routes (incl. /safety, /contact, /disclaimer)
- *  - One anchor entry per catalogue section (listings render inside overlay
- *    dossiers on the home sections, so each section is a unique URL — never
- *    duplicate <loc> entries).
+ *
+ * PROMPT 2: the homepage is a clean marketplace gateway — no product-grid
+ * anchors are indexed (the old #explore / #panel-seller / #paid-push anchors
+ * were removed alongside the sections they targeted).
  *
  * Does NOT include:
  *  - Duplicate URLs
@@ -55,7 +51,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "daily",
       priority: 0.8,
     },
-    // Instagram service pages — canonical order routes
+    // Instagram marketplace hub + service pages — canonical order routes
+    {
+      url: `${baseUrl}/instagram`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
     {
       url: `${baseUrl}/instagram/views`,
       lastModified: now,
@@ -126,6 +128,54 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     {
+      url: `${baseUrl}/purchase-policy`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/account-transfer-policy`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/listing-policy`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/content-policy`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/support`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/seller-policy`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/free-fire-policy`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/services-policy`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
       url: `${baseUrl}/disclaimer`,
       lastModified: now,
       changeFrequency: "monthly",
@@ -133,45 +183,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  /** One entry per catalogue section — unique URL, freshest lastModified. */
-  const sectionPage = (
-    records: { demo?: boolean; published?: boolean; updatedAt?: string; createdAt?: string }[],
-    url: string,
-    priority: number,
-  ): MetadataRoute.Sitemap => {
-    const published = records.filter((r) => !r.demo && r.published);
-    if (published.length === 0) return [];
-    const latest = Math.max(
-      ...published.map((r) => new Date(r.updatedAt || r.createdAt || now).getTime()),
-    );
-    return [
-      {
-        url: `${baseUrl}${url}`,
-        lastModified: new Date(latest),
-        changeFrequency: "weekly",
-        priority,
-      },
-    ];
-  };
+  // Marketplace catalogue pages (/accounts, /services, /paid-push) are already
+  // listed above with a daily change frequency. Anchor entries (#explore,
+  // #panel-seller, #paid-push) were removed in PROMPT 2 — the homepage is now a
+  // clean gateway with no product-grid anchors to index.
 
-  // Listing sections (details render in overlay dossiers from the home sections)
-  const sectionPages: MetadataRoute.Sitemap = [
-    ...sectionPage(
-      getFeaturedAccounts(999).records,
-      "/#explore",
-      0.7,
-    ),
-    ...sectionPage(
-      getFeaturedPanelServices(999).records,
-      "/#panel-seller",
-      0.7,
-    ),
-    ...sectionPage(
-      getFeaturedRankPush(999).records,
-      "/#paid-push",
-      0.7,
-    ),
-  ];
-
-  return [...staticPages, ...sectionPages];
+  return staticPages;
 }
