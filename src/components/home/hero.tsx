@@ -2,39 +2,28 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ShieldCheck, Sparkles, ChevronDown, Compass, Server, Trophy, MessageCircle, Gem, Instagram, Check } from "lucide-react";
-import { SculpturalObject } from "@/components/visual/sculptural-object";
+import { ArrowRight, ShieldCheck, Sparkles, ChevronDown, Server, Trophy, MessageCircle, Gem, Instagram, Check } from "lucide-react";
 import { ParallaxLayer } from "@/components/visual/parallax-layer";
 import { RevealText } from "@/components/visual/reveal-text";
 import { MagneticButton } from "@/components/visual/magnetic-button";
 import { GlassPanel } from "@/components/visual/glass-panel";
 import { StatusChip } from "@/components/visual/status-chip";
 import { siteConfig } from "@/config/site";
-import { buildWhatsAppUrl, buildFreeJoinWhatsAppUrl } from "@/lib/whatsapp";
+import { buildFreeJoinWhatsAppUrl } from "@/lib/whatsapp";
 import { getHomepageCatalogueStats } from "@/lib/selectors";
 import { z } from "@/lib/design/depth";
 
 /**
- * FF TRUST — Hero (PROMPT 05 god-level cinematic launch).
+ * FF TRUST — Hero.
  *
- * The strongest visual statement. 10D perceived-depth model:
- *  1 atmosphere (SceneAtmosphere, fixed)   2 light field (volumetric beams)
- *  3 particles (canvas snowfall)             4 distant geometry (rings)
- *  5 midground 3D object (crystalline prism) 6 translucent glass pedestal
- *  7 foreground UI (huge editorial type)     8 reflections/highlights/shadow
- *  9 micro-interactions (magnetic + parallax + floating chips) 
- * 10 camera/scroll relationship (scroll cue + parallax drift)
- *
- * Huge FF TRUST editorial type · primary Explore CTA · secondary Search CTA ·
- * original 3D holographic focal object · floating account/service micro-panels ·
- * atmospheric light · subtle snow · responsive depth.
+ * Clean hero stage: huge editorial type, primary Explore CTA, secondary
+ * marketplace CTAs, honest live counts, and trust highlight chips.
  *
  * Honest counts: shows the REAL canonical inventory count (0 until owner adds
  * listings) — never faked.
  */
 export function Hero() {
   const router = useRouter();
-  const wa = buildWhatsAppUrl({ inquiry: "Hello FF TRUST, I'd like to know more." });
   const stats = getHomepageCatalogueStats();
 
   return (
@@ -66,7 +55,7 @@ export function Hero() {
       {/* Light wash — local hero lighting */}
       <div aria-hidden className="light-wash absolute inset-0" />
 
-      <div className="container-wide relative grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+      <div className="container-wide relative flex flex-col items-start gap-12">
         {/* Left — huge editorial type + dual CTAs */}
         <div className="relative flex min-w-0 flex-col gap-8" style={{ zIndex: z("foregroundUI") }}>
           <RevealText>
@@ -165,71 +154,6 @@ export function Hero() {
             </div>
           </RevealText>
         </div>
-
-        {/* Right — 3D holographic focal object + floating micro-panels */}
-        <div className="relative flex min-w-0 items-center justify-center" style={{ zIndex: z("midgroundObject") }}>
-          <ParallaxLayer depth={2}>
-            <div className="relative">
-              {/* Volumetric light beam behind the object */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute left-1/2 top-1/2 h-[120%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
-                style={{
-                  background:
-                    "radial-gradient(ellipse at center, oklch(0.82 0.12 200 / 0.35) 0%, oklch(0.7 0.12 290 / 0.2) 40%, oklch(1 0 0 / 0) 70%)",
-                }}
-              />
-              {/* Glass pedestal — the 3D stage with inner illumination */}
-              <GlassPanel
-                depth="pedestal"
-                holo
-                className="relative flex aspect-square w-[min(82vw,32rem)] items-center justify-center rounded-[2.5rem]"
-              >
-                {/* Inner illumination glow */}
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-6 rounded-[2rem] blur-2xl"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 50% 45%, oklch(0.82 0.12 200 / 0.22) 0%, oklch(0.7 0.12 290 / 0.12) 50%, oklch(1 0 0 / 0) 75%)",
-                  }}
-                />
-                <SculpturalObject className="!relative h-[82%] w-[82%]" />
-
-                {/* Floating account/service micro-panels — dimensional glass.
-                    Hidden on mobile/tablet to prevent overflow; visible on xl+ */}
-                <div className="pointer-events-none absolute -left-4 top-4 hidden drift-float xl:block">
-                  <MicroPanel icon={<Compass className="h-3 w-3" />} label="Account" tone="cyan" />
-                </div>
-                <div
-                  className="pointer-events-none absolute -right-3 top-1/4 hidden drift-float xl:block"
-                  style={{ animationDelay: "1.5s" }}
-                >
-                  <MicroPanel icon={<Server className="h-3 w-3" />} label="Panel" tone="violet" />
-                </div>
-                <div
-                  className="pointer-events-none absolute -left-2 bottom-12 hidden drift-float xl:block"
-                  style={{ animationDelay: "3s" }}
-                >
-                  <MicroPanel icon={<Trophy className="h-3 w-3" />} label="Rank Push" tone="azure" />
-                </div>
-                <div
-                  className="pointer-events-none absolute -right-2 bottom-8 hidden drift-float xl:block"
-                  style={{ animationDelay: "2.5s" }}
-                >
-                  <StatusChip tone="cyan">evidence-first</StatusChip>
-                </div>
-              </GlassPanel>
-
-              {/* Floor reflection — stronger */}
-              <div
-                aria-hidden
-                className="reflection-floor"
-                style={{ width: "85%", bottom: "-8%", height: "14%", opacity: 0.8 }}
-              />
-            </div>
-          </ParallaxLayer>
-        </div>
       </div>
 
       {/* Scroll cue — camera/scroll relationship */}
@@ -255,41 +179,6 @@ function Stat({ label, value, sub }: { label: string; value: React.ReactNode; su
       <span className="font-mono-label text-[9px] text-[var(--ink-soft)]">
         {label}
         {sub ? ` · ${sub}` : ""}
-      </span>
-    </div>
-  );
-}
-
-/** Floating micro-panel — a tiny glass chip representing an account/service type. */
-function MicroPanel({
-  icon,
-  label,
-  tone,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  tone: "cyan" | "violet" | "azure";
-}) {
-  const toneBg =
-    tone === "cyan"
-      ? "oklch(0.82 0.1 200 / 0.25)"
-      : tone === "violet"
-        ? "oklch(0.7 0.12 290 / 0.22)"
-        : "oklch(0.7 0.12 258 / 0.22)";
-  const toneText =
-    tone === "cyan"
-      ? "oklch(0.35 0.14 200)"
-      : tone === "violet"
-        ? "oklch(0.4 0.18 290)"
-        : "oklch(0.35 0.14 258)";
-  return (
-    <div
-      className="glass-float flex items-center gap-1.5 rounded-full px-3 py-1.5"
-      style={{ background: toneBg, boxShadow: "var(--glass-shadow)" }}
-    >
-      <span style={{ color: toneText }}>{icon}</span>
-      <span className="font-mono-label text-[8px]" style={{ color: toneText }}>
-        {label}
       </span>
     </div>
   );
