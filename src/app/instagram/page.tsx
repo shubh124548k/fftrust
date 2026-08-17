@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { pageMetadata } from "@/lib/seo";
-import { InstagramHubPage } from "@/components/instagram/instagram-hub-page";
+
+const InstagramHubPage = dynamic(
+  () => import("@/components/instagram/instagram-hub-page").then((m) => m.InstagramHubPage),
+  { loading: () => <div className="animate-pulse rounded-2xl bg-white/5 h-64" /> },
+);
 
 export const metadata: Metadata = pageMetadata({
   title: "Instagram Marketplace",

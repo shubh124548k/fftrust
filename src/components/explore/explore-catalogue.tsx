@@ -101,16 +101,11 @@ export function ExploreCatalogue({ rotate = false }: { rotate?: boolean }) {
   }, [query, activeTab.records, sort]);
 
   // PROMPT 3 — homepage rotation: a sliding window (size 3, step 1, wrap)
-  // over the FULL sorted pool. window count == pool length, so the section
-  // visibly rotates every 5 seconds even with the current 3-record sample
-  // pool, and added/removed records automatically join/leave the windows.
   const pages = React.useMemo(() => buildRotationWindows(results), [results]);
+  const resetKey = React.useMemo(() => results.map((r) => r.id).join("|"), [results]);
   const rotor = useAutoRotation(pages.length, {
     enabled: rotate,
-    // Stable key: the id-list string only changes when the pool/order changes
-    // (sort, data edit) — NOT on every render. A changing identity would reset
-    // the rotor to window 0 after every render and block visible rotation.
-    resetKey: results.map((r) => r.id).join("|"),
+    resetKey,
   });
   const stageRef = React.useRef<HTMLDivElement>(null);
   const visible = rotate

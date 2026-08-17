@@ -100,8 +100,8 @@ export function InstagramOrderModal({ open, onClose, service, pkg }: InstagramOr
       <div
         className="popup-backdrop absolute inset-0"
         style={{
-          backdropFilter: "blur(24px) saturate(1.5)",
-          WebkitBackdropFilter: "blur(24px) saturate(1.5)",
+          backdropFilter: "blur(8px) saturate(1.2)",
+          WebkitBackdropFilter: "blur(8px) saturate(1.2)",
           animation: "ff-fade-in 200ms ease-out",
         }}
       />

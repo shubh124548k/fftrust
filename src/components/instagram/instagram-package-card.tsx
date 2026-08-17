@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  *   - clicking the card body opens the same order/details experience;
  *     wishlist/compare clicks are isolated (never navigate, never order)
  */
-export function InstagramPackageCard({
+function InstagramPackageCardInner({
   service,
   pkg,
   onOpen,
@@ -168,3 +168,5 @@ export function InstagramPackageCard({
     </div>
   );
 }
+
+export const InstagramPackageCard = React.memo(InstagramPackageCardInner);

@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ArrowLeft } from "lucide-react";
 import { SectionHeading } from "@/components/visual/section-heading";
-import { PanelSellerShowroom } from "@/components/showroom/panel-seller-showroom";
 import { PromotionInfoBox } from "@/components/promotion/promotion-info-box";
 import { siteConfig } from "@/config/site";
 import { pageMetadata } from "@/lib/seo";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { BreadcrumbListJsonLd } from "@/components/seo/structured-data";
+
+const PanelSellerShowroom = dynamic(
+  () => import("@/components/showroom/panel-seller-showroom").then((m) => m.PanelSellerShowroom),
+  { loading: () => <div className="animate-pulse rounded-2xl bg-white/5 h-64" /> },
+);
 
 export const metadata: Metadata = pageMetadata({
   title: "Panel & Services",

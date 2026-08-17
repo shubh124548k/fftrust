@@ -44,7 +44,7 @@ import { PRICE_SORT_OPTIONS } from "@/lib/design/constants";
 const SORT_OPTIONS = PRICE_SORT_OPTIONS as { value: SortKey; label: string }[];
 
 export function PaidPushMarketplace({ rotate = false }: { rotate?: boolean }) {
-  const featured = getFeaturedRankPush(12);
+  const featured = React.useMemo(() => getFeaturedRankPush(12), []);
   const [sort, setSort] = React.useState<SortKey>("price-desc");
   const [query, setQuery] = React.useState("");
   const openDetail = useServiceDetailStore((s) => s.open);
@@ -60,16 +60,15 @@ export function PaidPushMarketplace({ rotate = false }: { rotate?: boolean }) {
 
   // PROMPT 3 — homepage rotation: sliding window (size 3, step 1, wrap).
   const pages = React.useMemo(() => buildRotationWindows(results), [results]);
+  const resetKey = React.useMemo(() => results.map((r) => r.id).join("|"), [results]);
   const rotor = useAutoRotation(pages.length, {
     enabled: rotate,
-    // Stable id-list key (see explore-catalogue) — identity-stable across renders.
-    resetKey: results.map((r) => r.id).join("|"),
+    resetKey,
   });
   const visible = rotate
     ? pages[Math.min(rotor.index, pages.length - 1)] ?? []
     : results;
   const showRotor = rotate && results.length > 0;
-  const stageRef = React.useRef<HTMLDivElement>(null);
 
   return (
     <div className="flex flex-col gap-8">
@@ -145,7 +144,6 @@ export function PaidPushMarketplace({ rotate = false }: { rotate?: boolean }) {
       {results.length > 0 ? (
         showRotor ? (
           <div
-            ref={stageRef}
             className="rotor-stage"
             data-rotor-page={rotor.index}
             data-rotor-total={pages.length}

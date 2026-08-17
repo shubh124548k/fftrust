@@ -1,6 +1,3 @@
-"use client";
-
-import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { MessageCircle, Heart } from "lucide-react";
@@ -21,8 +18,24 @@ import { GlassPanel } from "@/components/visual/glass-panel";
  * Sticky to bottom via root `min-h-screen flex flex-col` + `mt-auto`. Carries
  * the independent-platform disclosure + safety reminder. WhatsApp opens only.
  */
+const FOOTER_WA = buildWhatsAppUrl({ inquiry: "Hello FF TRUST, I'd like to know more." });
+
+const LEGAL_LINKS = [
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms of Service" },
+  { href: "/refund-policy", label: "Refund Policy" },
+  { href: "/purchase-policy", label: "Purchase Policy" },
+  { href: "/account-transfer-policy", label: "Account Transfer Policy" },
+  { href: "/listing-policy", label: "Listing Policy" },
+  { href: "/content-policy", label: "Content Policy" },
+  { href: "/seller-policy", label: "Seller Policy" },
+  { href: "/free-fire-policy", label: "Free Fire Account Policy" },
+  { href: "/services-policy", label: "Paid Push & Services Policy" },
+  { href: "/disclaimer", label: "Disclaimer" },
+  { href: "/support", label: "Support" },
+];
+
 export function SiteFooter() {
-  const wa = buildWhatsAppUrl({ inquiry: "Hello FF TRUST, I'd like to know more." });
   return (
     <footer className="mt-auto">
       <div className="container-wide">
@@ -102,7 +115,7 @@ export function SiteFooter() {
               </Link>
             </p>
             <a
-              href={wa}
+              href={FOOTER_WA}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-4 py-2 text-sm font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-cyan)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
@@ -117,20 +130,7 @@ export function SiteFooter() {
             aria-label="Legal"
             className="relative mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-[var(--border)] pt-6"
           >
-            {[
-              { href: "/privacy", label: "Privacy Policy" },
-              { href: "/terms", label: "Terms of Service" },
-              { href: "/refund-policy", label: "Refund Policy" },
-              { href: "/purchase-policy", label: "Purchase Policy" },
-              { href: "/account-transfer-policy", label: "Account Transfer Policy" },
-              { href: "/listing-policy", label: "Listing Policy" },
-              { href: "/content-policy", label: "Content Policy" },
-              { href: "/seller-policy", label: "Seller Policy" },
-              { href: "/free-fire-policy", label: "Free Fire Account Policy" },
-              { href: "/services-policy", label: "Paid Push & Services Policy" },
-              { href: "/disclaimer", label: "Disclaimer" },
-              { href: "/support", label: "Support" },
-            ].map((link) => (
+            {LEGAL_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

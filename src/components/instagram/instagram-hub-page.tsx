@@ -5,6 +5,7 @@ import { ArrowRight, Lock, Instagram as InstagramIcon, Eye, Users, Heart, Play }
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { getInstagramCategorySummaries, formatPrice } from "@/lib/selectors/instagram";
 import { cn } from "@/lib/utils";
+import * as React from "react";
 
 /**
  * FF TRUST — Instagram Marketplace Hub (/instagram).
@@ -24,7 +25,7 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 export function InstagramHubPage() {
-  const categories = getInstagramCategorySummaries();
+  const categories = React.useMemo(() => getInstagramCategorySummaries(), []);
 
   return (
     <main className="relative pt-28 pb-20 sm:pt-32">
@@ -32,12 +33,12 @@ export function InstagramHubPage() {
         <Breadcrumbs items={[{ label: "Instagram" }]} />
 
         {/* Back link */}
-        <a
+        <Link
           href="/"
           className="mb-6 inline-flex items-center gap-2 text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
         >
           ← Back to home
-        </a>
+        </Link>
 
         {/* Hero */}
         <div className="mb-12">

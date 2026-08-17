@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  * fixed/z-index fights, no overlap with the global CompareDock. Hidden on
  * sm+ (desktop keeps the header CTAs).
  */
-export function MobileStickyCTA({
+function MobileStickyCTAInner({
   wa,
   id,
   type,
@@ -81,3 +81,5 @@ export function MobileStickyCTA({
     </div>
   );
 }
+
+export const MobileStickyCTA = React.memo(MobileStickyCTAInner);

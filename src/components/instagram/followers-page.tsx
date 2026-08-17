@@ -1,17 +1,12 @@
 "use client";
 
+import * as React from "react";
 import { Users } from "lucide-react";
 import { InstagramServicePage } from "@/components/instagram/service-page";
 import { getFollowersPackages, getFollowersService } from "@/lib/selectors/instagram";
 
-/**
- * FF TRUST — Instagram Followers client page.
- *
- * True clone of the Views page — same template, same components, same order
- * system, same WhatsApp flow. All pricing data comes from
- * src/data/instagram/followers.ts — changing the data file automatically
- * updates cards, savings, and the WhatsApp message.
- */
+const FOLLOWERS_ICON = <Users className="h-5 w-5 text-white" />;
+
 export function FollowersClientPage() {
   const packages = getFollowersPackages();
   const service = getFollowersService();
@@ -20,7 +15,7 @@ export function FollowersClientPage() {
     <InstagramServicePage
       service={service}
       packages={packages}
-      heroIcon={<Users className="h-5 w-5 text-white" />}
+      heroIcon={FOLLOWERS_ICON}
       heroWord="Followers"
     />
   );

@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ArrowLeft, ChevronDown, Zap, ShieldCheck, PackageSearch } from "lucide-react";
 import { RevealText } from "@/components/visual/reveal-text";
-import { InstagramOrderModal } from "@/components/instagram/order-modal";
 import { InstagramPackageCard } from "@/components/instagram/instagram-package-card";
 import { EmptyState } from "@/components/visual/empty-state";
 import {
@@ -15,6 +15,10 @@ import {
 import type { InstagramServiceType } from "@/data/types";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { PRICE_SORT_OPTIONS } from "@/lib/design/constants";
+
+const InstagramOrderModal = dynamic(
+  () => import("@/components/instagram/order-modal").then((m) => m.InstagramOrderModal),
+);
 
 /**
  * FF TRUST — Shared Instagram service page (Views / Followers / Likes).
