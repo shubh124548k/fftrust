@@ -13,7 +13,7 @@ import { PARALLAX } from "@/lib/design/tokens";
  * motion — degrades to static composition. Mobile uses a reduced multiplier
  * via the tier system.
  */
-export function ParallaxLayer({
+export const ParallaxLayer = React.memo(function ParallaxLayer({
   children,
   className,
   depth = 2,
@@ -65,7 +65,7 @@ export function ParallaxLayer({
       onScroll();
     };
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onResize);
+    window.addEventListener("resize", onResize, { passive: true });
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", onScroll);
@@ -78,4 +78,4 @@ export function ParallaxLayer({
       {children}
     </div>
   );
-}
+});

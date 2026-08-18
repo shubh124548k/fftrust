@@ -54,9 +54,9 @@ export function SiteFooter() {
             }}
           />
 
-          <div className="relative grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          <div className="relative grid gap-8 sm:gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
             {/* Brand + disclosure */}
-            <div className="flex flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-4">
               <div className="flex items-center gap-2.5">
                 <Image
                   src={siteConfig.brandLogo}

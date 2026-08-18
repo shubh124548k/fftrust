@@ -23,11 +23,13 @@ import {
   Users,
   Heart,
   Instagram as InstagramIcon,
+  User,
 } from "lucide-react";
 import { primaryNav, servicesNav, safetyNav, systemNav, wishlistNav, instagramNav, instagramSubNav, type NavItem } from "@/config/navigation";
 import { siteConfig } from "@/config/site";
 import { MagneticButton } from "@/components/visual/magnetic-button";
 import { useSellerContactStore } from "@/stores/seller-contact";
+import { useAuthStore } from "@/stores/auth";
 import { lockBodyScroll, unlockBodyScroll } from "@/lib/scroll-lock";
 import { cn } from "@/lib/utils";
 import { z } from "@/lib/design/depth";
@@ -63,7 +65,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
  *  - Internal scrolling
  *  - Active state from pathname
  */
-export function MobileCommandCenter({
+export const MobileCommandCenter = React.memo(function MobileCommandCenter({
   open,
   onClose,
 }: {
@@ -74,6 +76,7 @@ export function MobileCommandCenter({
   const closeRef = React.useRef<HTMLButtonElement>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
   const openSellerPopup = useSellerContactStore((s) => s.openPopup);
+  const openLoginModal = useAuthStore((s) => s.openLoginModal);
   const pathname = usePathname();
   const [instagramExpanded, setInstagramExpanded] = React.useState(false);
 
@@ -120,6 +123,10 @@ export function MobileCommandCenter({
     };
   }, [open, onClose]);
 
+  // Build nav groups — Instagram is a special accordion item, not a plain link
+  const navigateItems = React.useMemo(() => [...primaryNav, wishlistNav], []);
+  const servicesItems = React.useMemo(() => servicesNav, []);
+
   if (!open) return null;
 
   const isPathActive = (href: string) => {
@@ -127,10 +134,6 @@ export function MobileCommandCenter({
     if (href.startsWith("/instagram")) return pathname.startsWith("/instagram");
     return pathname === href;
   };
-
-  // Build nav groups — Instagram is a special accordion item, not a plain link
-  const navigateItems = [...primaryNav, wishlistNav];
-  const servicesItems = servicesNav;
 
   const igIcons: Record<string, React.ReactNode> = {
     "instagram-overview": <Compass className="h-4 w-4" />,
@@ -302,6 +305,19 @@ export function MobileCommandCenter({
           })}
         </div>
 
+        {/* Login button */}
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            requestAnimationFrame(() => openLoginModal());
+          }}
+          className="glass-embed mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium text-[var(--ink)] transition-all hover:shadow-[var(--glass-shadow-lift)]"
+        >
+          <User className="h-4 w-4 text-[var(--accent-azure)]" />
+          Sign in with Google
+        </button>
+
         {/* Contact to Owner CTA */}
         <MagneticButton
           onClick={() => {
@@ -325,4 +341,4 @@ export function MobileCommandCenter({
       </div>
     </div>
   );
-}
+});

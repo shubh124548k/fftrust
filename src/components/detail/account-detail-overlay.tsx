@@ -8,6 +8,7 @@ import { AccountDossier } from "./account-dossier";
 import { EmptyState } from "@/components/visual/empty-state";
 import { Compass } from "lucide-react";
 import { z } from "@/lib/design/depth";
+import { useRecentlyViewedStore } from "@/stores/recently-viewed";
 
 /**
  * FF TRUST — Account Detail Overlay (PROMPT 07).
@@ -72,13 +73,21 @@ export function AccountDetailOverlay() {
     }
   }, [selectedId]);
 
+  // Track recently viewed when opening a detail
+  const addView = useRecentlyViewedStore((s) => s.addView);
+  React.useEffect(() => {
+    if (selectedId) {
+      addView(selectedId, "account");
+    }
+  }, [selectedId, addView]);
+
   if (!selectedId) return null;
 
   const record = getAccountById(selectedId);
 
   return (
     <div
-      className="fixed inset-0"
+      className="fixed inset-0 overflow-hidden"
       style={{ zIndex: z("modal") }}
       role="dialog"
       aria-modal="true"
@@ -94,7 +103,7 @@ export function AccountDetailOverlay() {
       {/* Panel */}
       <div
         ref={panelRef}
-        className="glass-stack absolute inset-x-0 top-0 m-3 max-h-[96vh] overflow-y-auto rounded-[2rem] p-5 sm:m-6 sm:p-8"
+        className="glass-stack absolute inset-x-0 top-0 m-2 max-h-[96vh] overflow-y-auto overflow-x-hidden rounded-[2rem] p-4 sm:m-6 sm:p-8"
         style={{ animation: "ff-slide-down 360ms cubic-bezier(0.22,1,0.36,1)" }}
       >
         {/* Sticky close bar */}

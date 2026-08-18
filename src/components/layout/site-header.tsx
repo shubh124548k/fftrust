@@ -12,6 +12,7 @@ import {
   Eye,
   Users,
   Instagram as InstagramIcon,
+  User,
 } from "lucide-react";
 import { primaryNav, servicesNav, wishlistNav, instagramNav, instagramSubNav } from "@/config/navigation";
 import { siteConfig } from "@/config/site";
@@ -20,6 +21,8 @@ import { AnimatedHamburger } from "./animated-hamburger";
 import { MobileCommandCenter } from "./mobile-command-center";
 import { useSellerContactStore } from "@/stores/seller-contact";
 import { useFavoritesStore } from "@/stores/favorites";
+import { useAuthStore } from "@/stores/auth";
+import { UserMenu } from "@/components/auth/user-menu";
 import { cn } from "@/lib/utils";
 import { z } from "@/lib/design/depth";
 import { usePerformanceTier } from "@/lib/design/use-performance-tier";
@@ -43,6 +46,7 @@ export function SiteHeader() {
   const tier = usePerformanceTier();
   const openSellerPopup = useSellerContactStore((s) => s.openPopup);
   const favoritesCount = useFavoritesStore((s) => s.favorites.length);
+  const openLoginModal = useAuthStore((s) => s.openLoginModal);
   const pathname = usePathname();
 
   React.useEffect(() => {
@@ -75,6 +79,21 @@ export function SiteHeader() {
     });
     return () => obs.disconnect();
   }, [tier]);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("auth-required") === "true") {
+      const callbackUrl = params.get("callbackUrl") || "/";
+      const type = callbackUrl.startsWith("/seller/dashboard")
+        ? "seller-dashboard"
+        : callbackUrl.startsWith("/seller")
+          ? "list-account"
+          : "contact";
+      openLoginModal({ type, url: callbackUrl });
+      const clean = window.location.pathname;
+      window.history.replaceState({}, "", clean);
+    }
+  }, [openLoginModal]);
 
   // Close Instagram dropdown when clicking outside or pressing Escape
   const instagramRef = React.useRef<HTMLDivElement>(null);
@@ -126,10 +145,10 @@ export function SiteHeader() {
       className="fixed inset-x-0 top-0"
       style={{ zIndex: z("nav") }}
     >
-      <div className={cn("container-wide transition-all duration-500", scrolled ? "py-2" : "py-3")}>
+      <div className={cn("container-wide transition-all duration-200", scrolled ? "py-2" : "py-3")}>
         <div
           className={cn(
-            "glass-float relative flex items-center justify-between gap-2 overflow-visible rounded-full px-3 py-2 transition-all duration-500 sm:gap-3 sm:px-4",
+            "glass-float relative flex items-center justify-between gap-2 overflow-visible rounded-full px-3 py-2 transition-all duration-200 sm:gap-3 sm:px-4",
             scrolled && "shadow-[var(--glass-shadow-lift)]",
           )}
         >
@@ -281,6 +300,20 @@ export function SiteHeader() {
               <MessageCircle className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">Contact</span>
             </MagneticButton>
+
+            {/* User Menu / Login */}
+            <div className="hidden lg:block">
+              <UserMenu />
+            </div>
+            <button
+              type="button"
+              onClick={() => openLoginModal()}
+              className="glass-embed inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[var(--ink)] transition-all hover:shadow-[var(--glass-shadow-lift)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] lg:hidden"
+              aria-label="Sign in"
+            >
+              <User className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sign in</span>
+            </button>
 
             {/* Hamburger — visible below lg (1024px) */}
             <AnimatedHamburger open={menuOpen} onToggle={setMenuOpen} />

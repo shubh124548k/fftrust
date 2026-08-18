@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
  */
 export type HoloChromeVariant = "default" | "featured" | "unavailable" | "compact";
 
-export function HoloChromeCard({
+export const HoloChromeCard = React.memo(function HoloChromeCard({
   children,
   className,
   variant = "default",
@@ -58,13 +58,13 @@ export function HoloChromeCard({
       <div className="relative z-10 flex h-full flex-col">{children}</div>
     </div>
   );
-}
+});
 
 /**
  * FloatingPricePlate — a dimensional glass plate that floats over the
  * card's media stage. Uses glass-float surface + lift shadow.
  */
-export function FloatingPricePlate({ children, className }: { children: React.ReactNode; className?: string }) {
+export const FloatingPricePlate = React.memo(function FloatingPricePlate({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <div
       className={cn("glass-float rounded-2xl px-3 py-2", className)}
@@ -73,13 +73,13 @@ export function FloatingPricePlate({ children, className }: { children: React.Re
       {children}
     </div>
   );
-}
+});
 
 /**
  * MediaStage — reserved-aspect media container with lazy loading and
  * graceful broken-media fallback. Used inside HoloChromeCard.
  */
-export function MediaStage({
+export const MediaStage = React.memo(function MediaStage({
   media,
   title,
   fallbackGradient,
@@ -119,4 +119,4 @@ export function MediaStage({
       <div aria-hidden className="sheen-sweep absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
     </div>
   );
-}
+});

@@ -55,9 +55,9 @@ export function Hero() {
       {/* Light wash — local hero lighting */}
       <div aria-hidden className="light-wash absolute inset-0" />
 
-      <div className="container-wide relative flex flex-col items-start gap-12">
+      <div className="container-wide relative flex flex-col items-start gap-12 overflow-hidden">
         {/* Left — huge editorial type + dual CTAs */}
-        <div className="relative flex min-w-0 flex-col gap-8" style={{ zIndex: z("foregroundUI") }}>
+        <div className="relative flex min-w-0 flex-col gap-8 overflow-hidden" style={{ zIndex: z("foregroundUI") }}>
           <RevealText>
             <div className="flex flex-wrap items-center gap-2">
               <StatusChip tone="cyan" icon={<ShieldCheck className="h-3 w-3" />}>
@@ -73,7 +73,7 @@ export function Hero() {
             <RevealText delay={80}>
               <h1
                 id="hero-title"
-                className="font-heading text-balance text-6xl font-semibold leading-[0.94] tracking-tight text-[var(--ink)] sm:text-7xl lg:text-8xl xl:text-[7rem]"
+                className="font-heading text-balance text-4xl font-semibold leading-[0.94] tracking-tight text-[var(--ink)] sm:text-5xl md:text-6xl lg:text-8xl xl:text-[7rem]"
               >
                 Trusted marketplace
                 <br />
@@ -133,7 +133,7 @@ export function Hero() {
 
           {/* Honest counts — never faked */}
           <RevealText delay={340}>
-            <GlassPanel depth="thin" className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl px-5 py-4">
+            <GlassPanel depth="thin" className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl px-4 py-4 sm:gap-x-8 sm:px-5">
               <Stat label="Real accounts listed" value={stats.realAccounts} />
               <span aria-hidden className="hidden h-8 w-px bg-[var(--border)] sm:block" />
               <Stat label="Real services live" value={stats.realServices} />

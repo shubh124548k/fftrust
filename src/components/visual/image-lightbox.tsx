@@ -5,6 +5,7 @@ import { X, ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateVideoUrl } from "@/lib/validation";
 import { SafeVideo } from "@/components/visual/safe-video";
+import { lockBodyScroll, unlockBodyScroll } from "@/lib/scroll-lock";
 
 /**
  * FF TRUST — Media Lightbox (PROMPT 03 unified sequence).
@@ -77,13 +78,13 @@ export function ImageLightbox({
 
   // Lock body scroll + keyboard nav + focus management (moves focus into the
   // dialog, traps Tab, and restores focus to the trigger on close).
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
   React.useEffect(() => {
     if (!open) return;
 
     restoreFocusRef.current = document.activeElement as HTMLElement | null;
-
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
+    lockBodyScroll(containerRef);
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -117,8 +118,7 @@ export function ImageLightbox({
 
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-      document.documentElement.style.overflow = "";
+      unlockBodyScroll();
       cancelAnimationFrame(id);
       restoreFocusRef.current?.focus();
     };
@@ -186,6 +186,7 @@ export function ImageLightbox({
 
   return (
     <div
+      ref={containerRef}
       className="fixed inset-0 flex items-center justify-center"
       style={{ zIndex: 9999 }}
       onClick={onClose}
@@ -348,6 +349,9 @@ export function ImageLightbox({
                 alt={`Thumbnail ${i + 1}`}
                 className="h-full w-full object-cover"
                 loading="lazy"
+                decoding="async"
+                width={56}
+                height={56}
               />
             )}
           </button>

@@ -35,6 +35,7 @@ import { toListingMediaList } from "@/lib/media";
 import { getRelatedAccounts } from "@/lib/selectors/accounts";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 
 /**
  * FF TRUST — Account Detail Dossier (PROMPT 07).
@@ -55,6 +56,7 @@ export function AccountDossier({ record }: { record: AccountListing }) {
   const toggleCompare = useFavoritesStore((s) => s.toggleCompare);
   const isFavorite = useFavoritesStore((s) => s.favorites.includes(record.id));
   const isComparing = useFavoritesStore((s) => s.compare.some((e) => e.id === record.id));
+  const requireAuth = useRequireAuth();
   const wa = buildWhatsAppUrl(
     accountWhatsAppContext(
       record,
@@ -116,7 +118,10 @@ export function AccountDossier({ record }: { record: AccountListing }) {
           </div>
           <div className="mt-2 flex flex-col items-start gap-3">
             <PriceDisplay currentPrice={record.priceInr} originalPrice={record.originalPrice} size="lg" />
-            <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">
+            <MagneticButton onClick={() => requireAuth(
+              { type: "contact", listingId: record.id, listingType: "account", url: wa },
+              () => window.open(wa, "_blank", "noopener,noreferrer"),
+            )} className="px-6 py-3">
               Contact Owner
             </MagneticButton>
           </div>
@@ -188,7 +193,10 @@ export function AccountDossier({ record }: { record: AccountListing }) {
             <p className="text-sm text-[var(--ink-soft)] text-pretty">
               Opens WhatsApp with a prefilled, URL-encoded message. You press Send — the website never sends automatically.
             </p>
-            <MagneticButton className="mt-3 w-full" onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} strength={6}>
+            <MagneticButton className="mt-3 w-full" onClick={() => requireAuth(
+              { type: "inquiry", listingId: record.id, listingType: "account", url: wa },
+              () => window.open(wa, "_blank", "noopener,noreferrer"),
+            )} strength={6}>
               Inquire on WhatsApp
             </MagneticButton>
           </GlassPanel>

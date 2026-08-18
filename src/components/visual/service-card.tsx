@@ -26,6 +26,7 @@ import { ImageLightbox } from "./image-lightbox";
 import { SellerBadge } from "./seller-badge";
 import { PackageTierStrip } from "./package-tier-strip";
 import { cn } from "@/lib/utils";
+import { AuthGate } from "@/components/auth/auth-gate";
 
 /**
  * FF TRUST — Panel Service Card (PROMPT 10 advanced).
@@ -214,14 +215,16 @@ export function PanelServiceCard({
 
         {/* Actions */}
         <div className="mt-auto flex items-center gap-2 pt-1 sm:pt-1">
-          <a
-            href={wa}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="magnetic inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2 text-xs font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-cyan)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:px-4 sm:py-2.5 sm:text-sm"
-          >
-            Inquire on WhatsApp
-          </a>
+          <AuthGate action={{ type: "inquiry", listingId: record.id, listingType: "panel", url: wa }}>
+            <a
+              href={wa}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="magnetic inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2 text-xs font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-cyan)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:px-4 sm:py-2.5 sm:text-sm"
+            >
+              Inquire on WhatsApp
+            </a>
+          </AuthGate>
           {onDetails && (
             <button
               type="button"
@@ -441,14 +444,16 @@ export function RankPushCard({
 
         {/* Actions */}
         <div className="mt-auto flex items-center gap-2 pt-1 sm:pt-1">
-          <a
-            href={wa}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="magnetic inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2 text-xs font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-violet)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:px-4 sm:py-2.5 sm:text-sm"
-          >
-            Inquire on WhatsApp
-          </a>
+          <AuthGate action={{ type: "inquiry", listingId: record.id, listingType: "paid-push", url: wa }}>
+            <a
+              href={wa}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="magnetic inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-3 py-2 text-xs font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-violet)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:px-4 sm:py-2.5 sm:text-sm"
+            >
+              Inquire on WhatsApp
+            </a>
+          </AuthGate>
           {onDetails && (
             <button
               type="button"

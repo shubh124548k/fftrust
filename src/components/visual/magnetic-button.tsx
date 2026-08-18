@@ -27,17 +27,21 @@ const variantClass: Record<NonNullable<MagneticButtonProps["variant"]>, string> 
     "glass text-[var(--ink)] hover:text-[var(--accent-azure)]",
 };
 
-export const MagneticButton = React.forwardRef<HTMLButtonElement, MagneticButtonProps>(
+export const MagneticButton = React.memo(React.forwardRef<HTMLButtonElement, MagneticButtonProps>(
   ({ className, children, strength = 14, variant = "primary", onMouseMove, onMouseLeave, ...props }, ref) => {
     const tier = usePerformanceTier();
     const innerRef = React.useRef<HTMLButtonElement>(null);
     React.useImperativeHandle(ref, () => innerRef.current!);
 
+    const reduceQuery = React.useMemo(
+      () => (typeof window !== "undefined" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null),
+      [],
+    );
+
     const handleMove = (e: React.MouseEvent<HTMLButtonElement>) => {
       onMouseMove?.(e);
       if (tier === 0) return;
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduce) return;
+      if (reduceQuery?.matches) return;
       const el = innerRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
@@ -75,5 +79,5 @@ export const MagneticButton = React.forwardRef<HTMLButtonElement, MagneticButton
       </button>
     );
   },
-);
+));
 MagneticButton.displayName = "MagneticButton";

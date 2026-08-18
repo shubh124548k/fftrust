@@ -53,6 +53,7 @@ prompt
 server.log
 # local database + runtime pid files (machine-specific, never commit)
 /db/
+/prisma/db/
 *.pid
 
 # Skills directory

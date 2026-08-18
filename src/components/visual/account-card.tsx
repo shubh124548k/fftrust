@@ -24,6 +24,7 @@ import { useFavoritesStore } from "@/stores/favorites";
 import { useDetailStore } from "@/stores/detail";
 import { resolveListingMedia, getListingAllImages } from "@/lib/media";
 import { cn } from "@/lib/utils";
+import { AuthGate } from "@/components/auth/auth-gate";
 
 /**
  * FF TRUST — Account Card (PROMPT 06 advanced system).
@@ -204,14 +205,16 @@ export function AccountCard({
 
         {/* Actions — Inquire + View Details */}
         <div className="mt-auto flex items-center gap-1.5 pt-0.5 sm:gap-2 sm:pt-1">
-          <a
-            href={wa}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="magnetic inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-3 py-2 text-xs font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-cyan)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm"
-          >
-            Inquire
-          </a>
+          <AuthGate action={{ type: "inquiry", listingId: record.id, listingType: "account", url: wa }}>
+            <a
+              href={wa}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="magnetic inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[var(--primary)] px-3 py-2 text-xs font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-cyan)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)] sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm"
+            >
+              Inquire
+            </a>
+          </AuthGate>
           <button
             type="button"
             aria-label={`View details for ${record.title}`}

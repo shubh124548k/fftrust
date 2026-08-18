@@ -13,6 +13,9 @@ import { CompareEducationHint } from "@/components/compare/compare-education-hin
 import { SellerContactPopup } from "@/components/seller/seller-contact-popup";
 import { ScrollProgressBar } from "@/components/motion/scroll-progress-bar";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/seo/structured-data";
+import { AuthProvider } from "@/components/auth/auth-provider";
+import { LoginModal } from "@/components/auth/login-modal";
+import { PendingActionExecutor } from "@/components/auth/pending-action-executor";
 import { siteConfig } from "@/config/site";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -100,6 +103,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${spaceGrotesk.variable} antialiased`}
       >
+        <AuthProvider>
           {/* Root wrapper: min-h-screen flex-col so footer sticks (mt-auto) and pushes on overflow */}
           <div className="relative flex min-h-screen flex-col">
             <SceneAtmosphere />
@@ -117,8 +121,11 @@ export default function RootLayout({
           <CompareDock />
           <CompareEducationHint />
           <SellerContactPopup />
+          <LoginModal />
+          <PendingActionExecutor />
           <OrganizationJsonLd />
           <WebSiteJsonLd />
+        </AuthProvider>
       </body>
     </html>
   );

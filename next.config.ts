@@ -53,11 +53,10 @@ const nextConfig: NextConfig = {
               "font-src 'self' data: https://fonts.gstatic.com",
               // Media from HTTPS sources
               "media-src 'self' https: blob:",
-              // Connections to self + WhatsApp
-              "connect-src 'self' https://wa.me https://api.whatsapp.com",
-              // Frames — same-origin + the media viewer's embed providers only
-              // (YouTube-nocookie + Vimeo). No arbitrary third-party iframes.
-              "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com",
+              // Connections to self + WhatsApp + Google OAuth
+              "connect-src 'self' https://wa.me https://api.whatsapp.com https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com",
+              // Frames — same-origin + the media viewer's embed providers + Google OAuth
+              "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com https://accounts.google.com",
               // Object/embed — block entirely (no Flash/Java)
               "object-src 'none'",
               // Base URI — restrict to self

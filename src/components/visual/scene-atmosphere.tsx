@@ -22,6 +22,8 @@ export function SceneAtmosphere() {
   const tier = usePerformanceTier();
   const mounted = useMounted();
 
+  if (tier === 0) return null;
+
   return (
     <>
       <div aria-hidden className="studio-atmosphere" />
@@ -106,7 +108,7 @@ export function SceneAtmosphere() {
 
       {/* Rainfall/Snowfall — 3 depth layers, visibly present */}
       {mounted && tier >= 1 && (
-        <RainfallCanvas count={tier >= 2 ? 80 : 28} tier={tier} />
+        <RainfallCanvas count={tier >= 2 ? 80 : 16} tier={tier} />
       )}
 
       {/* Fine grain */}

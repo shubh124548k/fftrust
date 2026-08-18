@@ -11,7 +11,7 @@ import { useReveal } from "@/lib/design/use-performance-tier";
  * word lifts in with the outExpo curve. Honors prefers-reduced-motion (the
  * `reveal` utility force-shows content). No layout shift (transform/opacity).
  */
-export function RevealText({
+export const RevealText = React.memo(function RevealText({
   children,
   className,
   delay = 0,
@@ -33,10 +33,10 @@ export function RevealText({
       {children}
     </Comp>
   );
-}
+});
 
 /** Stagger container — children should be <RevealText> or .reveal nodes. */
-export function RevealGroup({
+export const RevealGroup = React.memo(function RevealGroup({
   children,
   className,
   stagger = 80,
@@ -58,4 +58,4 @@ export function RevealGroup({
       ))}
     </div>
   );
-}
+});

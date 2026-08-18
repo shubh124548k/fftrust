@@ -13,6 +13,7 @@ import { MobileStickyCTA } from "./mobile-sticky-cta";
 import { BuyerProofPanel } from "@/components/proof/buyer-proof-panel";
 import { useServiceDetailStore } from "@/stores/service-detail";
 import { useFavoritesStore } from "@/stores/favorites";
+import { useRecentlyViewedStore } from "@/stores/recently-viewed";
 import type { ListingType } from "@/stores/favorites";
 import { getPanelServiceById, getRankPushById, getRelatedPanelServices, getRelatedRankPush } from "@/lib/selectors/services";
 import { toListingMediaList } from "@/lib/media";
@@ -21,6 +22,7 @@ import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import { siteConfig } from "@/config/site";
 import { z } from "@/lib/design/depth";
 import { cn } from "@/lib/utils";
+import { useRequireAuth } from "@/hooks/use-require-auth";
 import { PanelServiceCard, RankPushCard } from "@/components/visual/service-card";
 import { RevealText } from "@/components/visual/reveal-text";
 import { ServicePackagePricing } from "@/components/detail/service-package-pricing";
@@ -60,6 +62,16 @@ export function ServiceDetailOverlay() {
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; cancelAnimationFrame(id); };
   }, [selectedId, close]);
 
+  // Track recently viewed
+  const addView = useRecentlyViewedStore((s) => s.addView);
+  React.useEffect(() => {
+    if (selectedId) {
+      const panelRecord = getPanelServiceById(selectedId);
+      const pushRecord = getRankPushById(selectedId);
+      addView(selectedId, panelRecord ? "panel" : "paid-push");
+    }
+  }, [selectedId, addView]);
+
   if (!selectedId) return null;
 
   const panelRecord = getPanelServiceById(selectedId);
@@ -68,9 +80,9 @@ export function ServiceDetailOverlay() {
   const isPush = !!pushRecord && !panelRecord;
 
   return (
-    <div className="fixed inset-0" style={{ zIndex: z("modal") }} role="dialog" aria-modal="true" aria-label="Service detail">
+    <div className="fixed inset-0 overflow-hidden" style={{ zIndex: z("modal") }} role="dialog" aria-modal="true" aria-label="Service detail">
       <div className="absolute inset-0 bg-[oklch(0.12_0.01_255/0.5)] backdrop-blur-md" onClick={close} style={{ animation: "ff-fade-in 220ms ease-out" }} />
-      <div ref={panelRef} className="glass-stack absolute inset-x-0 top-0 m-3 max-h-[96vh] overflow-y-auto rounded-[2rem] p-5 sm:m-6 sm:p-8" style={{ animation: "ff-slide-down 360ms cubic-bezier(0.22,1,0.36,1)" }} data-light="showroom">
+      <div ref={panelRef} className="glass-stack absolute inset-x-0 top-0 m-2 max-h-[96vh] overflow-y-auto overflow-x-hidden rounded-[2rem] p-4 sm:m-6 sm:p-8" style={{ animation: "ff-slide-down 360ms cubic-bezier(0.22,1,0.36,1)" }} data-light="showroom">
         <div className="sticky top-0 z-10 -mx-5 mb-6 flex items-center justify-end bg-gradient-to-b from-[var(--glass-bg-strong)] to-transparent px-5 pb-3 pt-1 sm:-mx-8 sm:px-8">
           <button ref={closeRef} type="button" aria-label="Close detail" onClick={close} className="glass-embed inline-flex h-10 w-10 items-center justify-center rounded-full text-[var(--ink)] transition-colors hover:text-[var(--accent-azure)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]">
             <X className="h-5 w-5" />
@@ -92,8 +104,8 @@ export function ServiceDetailOverlay() {
 
 function ServiceDossier({ record }: { record: NonNullable<ReturnType<typeof getPanelServiceById>> }) {
   const packages = record.packages ?? [];
-  // Controlled package selection — default to the cheapest ("Starting at") tier.
   const [selectedPackageId, setSelectedPackageId] = React.useState<string | null>(null);
+  const requireAuth = useRequireAuth();
   const selectedPkg = React.useMemo(() => {
     if (packages.length === 0) return null;
     const found = packages.find((p) => p.id === selectedPackageId);
@@ -147,7 +159,10 @@ function ServiceDossier({ record }: { record: NonNullable<ReturnType<typeof getP
               startingFrom={packages.length > 0 && !selectedPkg}
               size="lg"
             />
-            <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">
+            <MagneticButton onClick={() => requireAuth(
+              { type: "contact", listingId: record.id, listingType: "panel", url: wa },
+              () => window.open(wa, "_blank", "noopener,noreferrer"),
+            )} className="px-6 py-3">
               Contact Owner
             </MagneticButton>
           </div>
@@ -258,7 +273,10 @@ function ServiceDossier({ record }: { record: NonNullable<ReturnType<typeof getP
             <p className="text-sm text-[var(--ink-soft)] text-pretty">
               Opens WhatsApp with a prefilled message. You press Send — never automatic.
             </p>
-            <MagneticButton className="mt-3 w-full" onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} strength={6}>
+            <MagneticButton className="mt-3 w-full" onClick={() => requireAuth(
+              { type: "inquiry", listingId: record.id, listingType: "panel", url: wa },
+              () => window.open(wa, "_blank", "noopener,noreferrer"),
+            )} strength={6}>
               <MessageCircle className="h-4 w-4" />
               Inquire on WhatsApp
             </MagneticButton>
@@ -299,8 +317,8 @@ function ServiceDossier({ record }: { record: NonNullable<ReturnType<typeof getP
  */
 function RankPushDossier({ record }: { record: PaidPushService }) {
   const packages = record.packages ?? [];
-  // Controlled package selection — default to the cheapest ("Starting at") tier.
   const [selectedPackageId, setSelectedPackageId] = React.useState<string | null>(null);
+  const requireAuth = useRequireAuth();
   const selectedPkg = React.useMemo(() => {
     if (packages.length === 0) return null;
     const found = packages.find((p) => p.id === selectedPackageId);
@@ -355,7 +373,10 @@ function RankPushDossier({ record }: { record: PaidPushService }) {
               startingFrom={packages.length > 0 && !selectedPkg}
               size="lg"
             />
-            <MagneticButton onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} className="px-6 py-3">Contact Owner</MagneticButton>
+            <MagneticButton onClick={() => requireAuth(
+              { type: "contact", listingId: record.id, listingType: "paid-push", url: wa },
+              () => window.open(wa, "_blank", "noopener,noreferrer"),
+            )} className="px-6 py-3">Contact Owner</MagneticButton>
           </div>
         </div>
       </div>
@@ -371,21 +392,21 @@ function RankPushDossier({ record }: { record: PaidPushService }) {
       )}
 
       {/* Rank journey visual */}
-      <GlassPanel depth="float" className="relative overflow-hidden p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="text-center">
+      <GlassPanel depth="float" className="relative overflow-hidden p-4 sm:p-6">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="min-w-0 text-center">
             <p className="font-mono-label text-[9px] text-[var(--ink-soft)]">FROM</p>
-            <p className="font-heading text-xl font-semibold text-[var(--ink)]">{record.fromRank}</p>
+            <p className="truncate font-heading text-lg font-semibold text-[var(--ink)] sm:text-xl">{record.fromRank}</p>
           </div>
-          <svg width="120" height="32" viewBox="0 0 120 32" fill="none" aria-hidden>
+          <svg className="w-20 shrink-0 sm:w-24 md:w-[120px]" viewBox="0 0 120 32" fill="none" aria-hidden>
             <path d="M2 16 L100 16" stroke="oklch(0.74 0.15 196 / 0.6)" strokeWidth="2" strokeDasharray="4 6" />
             <path d="M92 8 L108 16 L92 24" stroke="oklch(0.6 0.19 290)" strokeWidth="2" fill="none" />
             <circle cx="2" cy="16" r="5" fill="oklch(0.74 0.15 196 / 0.8)" />
             <circle cx="100" cy="16" r="7" fill="oklch(0.6 0.19 290 / 0.8)" />
           </svg>
-          <div className="text-center">
+          <div className="min-w-0 text-center">
             <p className="font-mono-label text-[9px] text-[var(--ink-soft)]">TO</p>
-            <p className="font-heading text-xl font-semibold text-gradient-cyan">{record.toRank}</p>
+            <p className="truncate font-heading text-lg font-semibold text-gradient-cyan sm:text-xl">{record.toRank}</p>
           </div>
         </div>
       </GlassPanel>
@@ -467,7 +488,10 @@ function RankPushDossier({ record }: { record: PaidPushService }) {
           <GlassPanel depth="embed" className="p-5">
             <p className="font-mono-label mb-2 text-[9px] text-[var(--accent-azure)]">Contact</p>
             <p className="text-sm text-[var(--ink-soft)] text-pretty">Opens WhatsApp with a prefilled message. You press Send — never automatic.</p>
-            <MagneticButton className="mt-3 w-full" onClick={() => window.open(wa, "_blank", "noopener,noreferrer")} strength={6}>
+            <MagneticButton className="mt-3 w-full" onClick={() => requireAuth(
+              { type: "inquiry", listingId: record.id, listingType: "paid-push", url: wa },
+              () => window.open(wa, "_blank", "noopener,noreferrer"),
+            )} strength={6}>
               <MessageCircle className="h-4 w-4" /> Inquire on WhatsApp
             </MagneticButton>
           </GlassPanel>

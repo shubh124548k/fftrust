@@ -4,6 +4,7 @@ import * as React from "react";
 import { Heart, Columns3 } from "lucide-react";
 import { useFavoritesStore, type ListingType } from "@/stores/favorites";
 import { cn } from "@/lib/utils";
+import { AuthGate } from "@/components/auth/auth-gate";
 
 /**
  * FF TRUST — MobileStickyCTA (PROMPT 03 repair, shared primitive).
@@ -37,7 +38,7 @@ function MobileStickyCTAInner({
   return (
     <div
       className={cn(
-        "sticky bottom-0 z-10 -mx-5 flex items-center gap-2 border-t border-[var(--border)] px-5 pb-4 pt-3 backdrop-blur-md sm:hidden",
+        "sticky bottom-0 z-10 -mx-4 flex items-center gap-2 border-t border-[var(--border)] px-4 pb-4 pt-3 backdrop-blur-md sm:hidden",
         className,
       )}
       style={{ background: "var(--glass-bg-strong)" }}
@@ -70,14 +71,16 @@ function MobileStickyCTAInner({
       >
         <Columns3 className="h-4 w-4" />
       </button>
-      <a
-        href={wa}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="magnetic inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-4 text-sm font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-cyan)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
-      >
-        Inquire on WhatsApp
-      </a>
+      <AuthGate action={{ type: "inquiry", listingId: id, listingType: type, url: wa }}>
+        <a
+          href={wa}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="magnetic inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--primary)] px-4 text-sm font-medium text-[var(--primary-foreground)] transition-shadow hover:shadow-[var(--neon-cyan)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent-cyan)]"
+        >
+          Inquire on WhatsApp
+        </a>
+      </AuthGate>
     </div>
   );
 }
