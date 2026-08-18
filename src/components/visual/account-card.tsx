@@ -53,7 +53,7 @@ export type AccountCardVariant = "default" | "featured" | "compact" | "no-media"
 const ACCOUNT_FALLBACK_GRADIENT =
   "linear-gradient(135deg, oklch(0.82 0.1 200 / 0.35) 0%, oklch(0.7 0.12 290 / 0.22) 50%, oklch(0.9 0.02 245 / 0.5) 100%)";
 
-export function AccountCard({
+export const AccountCard = React.memo(function AccountCard({
   record,
   className,
   variant = "default",
@@ -238,4 +238,4 @@ export function AccountCard({
     />
     </>
   );
-}
+});

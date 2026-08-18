@@ -12,6 +12,7 @@ export default function SellerDashboardPage() {
   const openPopup = useSellerContactStore((s) => s.openPopup);
   const [profile, setProfile] = React.useState<{ displayName: string; verificationState: string; listings: unknown[] } | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [creating, setCreating] = React.useState(false);
 
   React.useEffect(() => {
     if (status === "authenticated") {
@@ -47,8 +48,29 @@ export default function SellerDashboardPage() {
   }
 
   if (!profile) {
+    const handleCreateProfile = async () => {
+      setCreating(true);
+      try {
+        const res = await fetch("/api/seller", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ displayName: session?.user?.name || "Seller" }),
+        });
+        if (res.ok) {
+          setCreating(false);
+          window.location.reload();
+        } else {
+          openPopup("account");
+          setCreating(false);
+        }
+      } catch {
+        openPopup("account");
+        setCreating(false);
+      }
+    };
+
     return (
-      <div className="section-ff">
+      <div className="section-ff overflow-hidden">
         <div className="container-wide max-w-lg">
           <div className="glass-panel flex flex-col items-center rounded-3xl p-8 text-center">
             <LayoutList className="h-12 w-12 text-[var(--ink-soft)]" />
@@ -56,8 +78,8 @@ export default function SellerDashboardPage() {
             <p className="mt-2 text-sm text-[var(--ink-soft)]">
               You haven&apos;t created a seller profile yet. Become a seller to list your services.
             </p>
-            <MagneticButton onClick={() => window.location.href = "/seller"} className="mt-6">
-              Become a Seller
+            <MagneticButton onClick={handleCreateProfile} className="mt-6" disabled={creating}>
+              {creating ? "Creating..." : "Become a Seller"}
             </MagneticButton>
           </div>
         </div>

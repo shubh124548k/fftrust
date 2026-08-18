@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { RouteTransition } from "@/components/layout/route-transition";
 import { ScrollManager } from "@/components/layout/scroll-manager";
-import { SceneAtmosphere } from "@/components/visual/scene-atmosphere";
+import { LazySceneAtmosphere } from "@/components/visual/lazy-scene-atmosphere";
 import { AccountDetailOverlay } from "@/components/detail/account-detail-overlay";
 import { ServiceDetailOverlay } from "@/components/detail/service-detail-overlay";
 import { CompareDock } from "@/components/compare/compare-dock";
@@ -106,7 +106,7 @@ export default function RootLayout({
         <AuthProvider>
           {/* Root wrapper: min-h-screen flex-col so footer sticks (mt-auto) and pushes on overflow */}
           <div className="relative flex min-h-screen flex-col">
-            <SceneAtmosphere />
+            <LazySceneAtmosphere />
             <ScrollManager />
             <ScrollProgressBar />
             <a href="#main-content" className="skip-link">Skip to content</a>

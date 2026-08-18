@@ -143,7 +143,7 @@ export function UserMenu() {
             </Link>
           )}
           <Link
-            href="/seller"
+            href="/seller/dashboard"
             onClick={() => setOpen(false)}
             className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-[var(--ink)] transition-colors hover:bg-[oklch(0.82_0.1_200/0.12)]"
           >

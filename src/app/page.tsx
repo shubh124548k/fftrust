@@ -38,12 +38,7 @@ import {
 import { PromotionInfoBox } from "@/components/promotion/promotion-info-box";
 import { FaqJsonLd } from "@/components/seo/structured-data";
 import {
-  FloatingRail,
-  SplitEditorial,
   ProcessDiagram,
-  ServiceShowroom,
-  EvidenceOrbit,
-  ComparisonStage,
   CinematicCTA,
 } from "@/components/home/sections";
 import { FreeJoinPromo, FreeJoinNotice } from "@/components/home/free-join-promo";

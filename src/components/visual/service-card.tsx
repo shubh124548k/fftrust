@@ -49,7 +49,7 @@ import { AuthGate } from "@/components/auth/auth-gate";
  * Detail dossier, not the card. Wishlist + compare use the shared persisted
  * store; child controls stopPropagation so they never trigger parent nav.
  */
-export function PanelServiceCard({
+export const PanelServiceCard = React.memo(function PanelServiceCard({
   record,
   className,
   onDetails,
@@ -248,7 +248,7 @@ export function PanelServiceCard({
     />
     </>
   );
-}
+});
 
 /**
  * FF TRUST — Paid Push Card (CS / BR) — PROMPT 11 advanced.
@@ -264,7 +264,7 @@ export function PanelServiceCard({
  * current + SAVE badge via best package), prominent seller, no-guarantee
  * disclosure lives in the Detail dossier (not the card).
  */
-export function RankPushCard({
+export const RankPushCard = React.memo(function RankPushCard({
   record,
   className,
   onDetails,
@@ -477,4 +477,4 @@ export function RankPushCard({
     />
     </>
   );
-}
+});
