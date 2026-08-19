@@ -7,16 +7,10 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { RouteTransition } from "@/components/layout/route-transition";
 import { ScrollManager } from "@/components/layout/scroll-manager";
 import { LazySceneAtmosphere } from "@/components/visual/lazy-scene-atmosphere";
-import { AccountDetailOverlay } from "@/components/detail/account-detail-overlay";
-import { ServiceDetailOverlay } from "@/components/detail/service-detail-overlay";
-import { CompareDock } from "@/components/compare/compare-dock";
-import { CompareEducationHint } from "@/components/compare/compare-education-hint";
-import { SellerContactPopup } from "@/components/seller/seller-contact-popup";
-import { ScrollProgressBar } from "@/components/motion/scroll-progress-bar";
 import { OrganizationJsonLd, WebSiteJsonLd } from "@/components/seo/structured-data";
 import { AuthProvider } from "@/components/auth/auth-provider";
-import { LoginModal } from "@/components/auth/login-modal";
 import { PendingActionExecutor } from "@/components/auth/pending-action-executor";
+import { ClientOverlays } from "@/components/layout/client-overlays";
 import { siteConfig } from "@/config/site";
 
 const ADSENSE_PUB = "ca-pub-6002453501267962";
@@ -119,7 +113,6 @@ export default function RootLayout({
           <div className="relative flex min-h-screen flex-col">
             <LazySceneAtmosphere />
             <ScrollManager />
-            <ScrollProgressBar />
             <a href="#main-content" className="skip-link">Skip to content</a>
             <SiteHeader />
             <main id="main-content" className="relative flex-1 scroll-mt-24" style={{ zIndex: "var(--z-foregroundUI)" }}>
@@ -127,12 +120,7 @@ export default function RootLayout({
             </main>
             <SiteFooter />
           </div>
-          <AccountDetailOverlay />
-          <ServiceDetailOverlay />
-          <CompareDock />
-          <CompareEducationHint />
-          <SellerContactPopup />
-          <LoginModal />
+          <ClientOverlays />
           <PendingActionExecutor />
           <OrganizationJsonLd />
           <WebSiteJsonLd />

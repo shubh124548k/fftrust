@@ -1,4 +1,5 @@
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   ShieldCheck,
   BadgeIndianRupee,
@@ -28,21 +29,32 @@ import {
   getCompareContent,
   getSafetyAcademyContent,
 } from "@/lib/selectors/content";
-import {
-  TrustCenterMap,
-  ScamCenterInteractive,
-  SafetyAcademyJourney,
-  PriceGuideDerived,
-  CompareStage,
-} from "@/components/editorial/editorial-sections";
 import { PromotionInfoBox } from "@/components/promotion/promotion-info-box";
 import { FaqJsonLd } from "@/components/seo/structured-data";
-import {
-  ProcessDiagram,
-  CinematicCTA,
-} from "@/components/home/sections";
 import { FreeJoinPromo, FreeJoinNotice } from "@/components/home/free-join-promo";
 import { SellerContactActions } from "@/components/seller/seller-contact-actions";
+
+const TrustCenterMap = dynamic(
+  () => import("@/components/editorial/editorial-sections").then((m) => m.TrustCenterMap),
+);
+const ScamCenterInteractive = dynamic(
+  () => import("@/components/editorial/editorial-sections").then((m) => m.ScamCenterInteractive),
+);
+const SafetyAcademyJourney = dynamic(
+  () => import("@/components/editorial/editorial-sections").then((m) => m.SafetyAcademyJourney),
+);
+const PriceGuideDerived = dynamic(
+  () => import("@/components/editorial/editorial-sections").then((m) => m.PriceGuideDerived),
+);
+const CompareStage = dynamic(
+  () => import("@/components/editorial/editorial-sections").then((m) => m.CompareStage),
+);
+const ProcessDiagram = dynamic(
+  () => import("@/components/home/sections").then((m) => m.ProcessDiagram),
+);
+const CinematicCTA = dynamic(
+  () => import("@/components/home/sections").then((m) => m.CinematicCTA),
+);
 
 /**
  * FF TRUST — Home (PROMPT 2 clean marketplace gateway).

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import {
   Heart,
@@ -18,7 +19,6 @@ import { primaryNav, servicesNav, wishlistNav, instagramNav, instagramSubNav } f
 import { siteConfig } from "@/config/site";
 import { MagneticButton } from "@/components/visual/magnetic-button";
 import { AnimatedHamburger } from "./animated-hamburger";
-import { MobileCommandCenter } from "./mobile-command-center";
 import { useSellerContactStore } from "@/stores/seller-contact";
 import { useFavoritesStore } from "@/stores/favorites";
 import { useAuthStore } from "@/stores/auth";
@@ -26,6 +26,11 @@ import { UserMenu } from "@/components/auth/user-menu";
 import { cn } from "@/lib/utils";
 import { z } from "@/lib/design/depth";
 import { usePerformanceTier } from "@/lib/design/use-performance-tier";
+
+const MobileCommandCenter = dynamic(
+  () => import("./mobile-command-center").then((m) => m.MobileCommandCenter),
+  { ssr: false },
+);
 
 /**
  * FF TRUST — Site Header (Navigation System Final).

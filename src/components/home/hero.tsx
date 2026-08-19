@@ -10,7 +10,7 @@ import { GlassPanel } from "@/components/visual/glass-panel";
 import { StatusChip } from "@/components/visual/status-chip";
 import { siteConfig } from "@/config/site";
 import { buildFreeJoinWhatsAppUrl } from "@/lib/whatsapp";
-import { getHomepageCatalogueStats } from "@/lib/selectors";
+import { getHomepageCatalogueStats } from "@/lib/selectors/catalogue";
 import { z } from "@/lib/design/depth";
 
 /**

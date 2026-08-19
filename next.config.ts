@@ -12,8 +12,13 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  poweredByHeader: false,
   // Allow the sandbox preview proxy to load _next resources without warnings.
   allowedDevOrigins: ["*.space-z.ai", "*.chatglm.cn"],
+  images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 31536000,
+  },
   async headers() {
     return [
       {
@@ -68,6 +73,27 @@ const nextConfig: NextConfig = {
               "frame-ancestors 'self' https://*.space-z.ai https://*.chatglm.cn https://*.z.ai",
             ].join("; "),
           },
+        ],
+      },
+      {
+        // Cache immutable Next.js static assets for 1 year
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        // Cache public images for 1 year (immutable)
+        source: "/:path*.(png|jpg|jpeg|gif|ico|svg|webp|avif)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        // Cache fonts for 1 year
+        source: "/:path*.woff2",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
     ];
