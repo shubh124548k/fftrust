@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 
 const protectedPaths = ["/account", "/seller"];
 
@@ -9,8 +9,8 @@ export async function proxy(request: NextRequest) {
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
 
   if (isProtected) {
-    const session = await auth();
-    if (!session?.user) {
+    const token = await getToken({ req: request, secret: process.env.AUTH_SECRET });
+    if (!token?.sub) {
       const url = request.nextUrl.clone();
       url.searchParams.set("auth-required", "true");
       url.searchParams.set("callbackUrl", pathname);
