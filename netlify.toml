@@ -2,8 +2,19 @@
 # https://docs.netlify.com/configure-builds/file-based-configuration/
 
 [build]
-  command = "prisma generate && next build"
-  publish = ".next"
+  command = "prisma generate && next build && rm -rf .next/cache .next/dev/cache .next/standalone/.env"
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+
+[build.processing.js]
+  bundle = true
+
+[build.processing.html]
+  pretty_urls = true
 
 # Required Environment Variables (set in Netlify Dashboard → Site settings → Environment variables):
 #
