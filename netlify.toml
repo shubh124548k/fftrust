@@ -1,0 +1,17 @@
+# FF TRUST — Netlify configuration
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  command = "prisma generate && next build"
+  publish = ".next"
+
+# Required Environment Variables (set in Netlify Dashboard → Site settings → Environment variables):
+#
+# AUTH_SECRET           — NextAuth secret (run: npx auth secret to generate)
+# AUTH_GOOGLE_ID        — Google OAuth Client ID
+# AUTH_GOOGLE_SECRET    — Google OAuth Client Secret (never commit to git)
+# DATABASE_URL          — Prisma database URL (e.g. file:./db/custom.db or hosted DB)
+# NEXT_PUBLIC_SITE_URL  — https://fftrust.netlify.app
+#
+# All five MUST be set in the Netlify production environment.
+# The .env file is gitignored and is NOT deployed to Netlify.
