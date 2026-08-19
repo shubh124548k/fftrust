@@ -43,8 +43,8 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // Next.js inline scripts + eval (dev) + bundled scripts
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              // Next.js inline scripts + eval (dev) + bundled scripts + AdSense
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://adservice.google.com https://adservice.google.co.in",
               // Tailwind CSS + inline styles
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               // Images from any HTTPS source (canonical data has external URLs)
@@ -53,10 +53,10 @@ const nextConfig: NextConfig = {
               "font-src 'self' data: https://fonts.gstatic.com",
               // Media from HTTPS sources
               "media-src 'self' https: blob:",
-              // Connections to self + WhatsApp + Google OAuth
-              "connect-src 'self' https://wa.me https://api.whatsapp.com https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com",
-              // Frames — same-origin + the media viewer's embed providers + Google OAuth
-              "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com https://accounts.google.com",
+              // Connections to self + WhatsApp + Google OAuth + AdSense
+              "connect-src 'self' https://wa.me https://api.whatsapp.com https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://pagead2.googlesyndication.com https://adservice.google.com https://adservice.google.co.in",
+              // Frames — same-origin + the media viewer's embed providers + Google OAuth + AdSense
+              "frame-src 'self' https://www.youtube-nocookie.com https://www.youtube.com https://player.vimeo.com https://accounts.google.com https://googleads.g.doubleclick.net",
               // Object/embed — block entirely (no Flash/Java)
               "object-src 'none'",
               // Base URI — restrict to self

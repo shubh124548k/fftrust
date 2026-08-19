@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
+  trustHost: true,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID!,
@@ -30,14 +31,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async signIn({ user, account }) {
       if (account?.provider === "google" && user?.email) {
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email },
-        });
-        if (existingUser) {
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: { lastLoginAt: new Date() },
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email },
           });
+          if (existingUser) {
+            await prisma.user.update({
+              where: { id: existingUser.id },
+              data: { lastLoginAt: new Date() },
+            });
+          }
+        } catch {
+          // Database error during sign-in — allow auth to proceed without DB update
         }
       }
       return true;

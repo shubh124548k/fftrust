@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono, Instrument_Serif, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -17,6 +18,8 @@ import { AuthProvider } from "@/components/auth/auth-provider";
 import { LoginModal } from "@/components/auth/login-modal";
 import { PendingActionExecutor } from "@/components/auth/pending-action-executor";
 import { siteConfig } from "@/config/site";
+
+const ADSENSE_PUB = "ca-pub-6002453501267962";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -93,6 +96,9 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   referrer: "strict-origin-when-cross-origin",
+  other: {
+    "google-adsense-account": ADSENSE_PUB,
+  },
 };
 
 export default function RootLayout({
@@ -103,6 +109,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${spaceGrotesk.variable} antialiased`}
       >
+        <Script
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_PUB}`}
+          strategy="afterInteractive"
+          crossOrigin="anonymous"
+        />
         <AuthProvider>
           {/* Root wrapper: min-h-screen flex-col so footer sticks (mt-auto) and pushes on overflow */}
           <div className="relative flex min-h-screen flex-col">
