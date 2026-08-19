@@ -1,3 +1,7 @@
+if (!process.env.AUTH_URL && process.env.NEXT_PUBLIC_SITE_URL) {
+  process.env.AUTH_URL = process.env.NEXT_PUBLIC_SITE_URL;
+}
+
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
