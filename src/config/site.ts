@@ -22,9 +22,7 @@ import type { SiteConfig } from "@/data/types";
 function resolveSiteUrl(): string {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "");
   if (envUrl) return envUrl;
-  return process.env.NODE_ENV === "production"
-    ? "https://fftrust.netlify.app"
-    : "http://localhost:1111";
+  return "http://localhost:1111";
 }
 
 export const siteUrl = resolveSiteUrl();

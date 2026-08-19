@@ -22,7 +22,7 @@
 # AUTH_GOOGLE_ID        — Google OAuth Client ID
 # AUTH_GOOGLE_SECRET    — Google OAuth Client Secret (never commit to git)
 # DATABASE_URL          — Prisma database URL (e.g. file:./db/custom.db or hosted DB)
-# NEXT_PUBLIC_SITE_URL  — https://fftrust.netlify.app
+# NEXT_PUBLIC_SITE_URL  — Production site URL (set in Netlify, not hardcoded here)
 #
 # All five MUST be set in the Netlify production environment.
 # The .env file is gitignored and is NOT deployed to Netlify.
