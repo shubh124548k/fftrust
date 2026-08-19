@@ -4,7 +4,13 @@ async function diagnosticHandler(req: Request) {
   const method = req.method === "POST" ? "POST" : "GET";
   const response = await handlers[method]!(req as any);
 
-  if (response.status >= 400) {
+  const url = new URL(req.url);
+  const resLocation = response.headers.get("location") || "";
+  const isRedirectToError =
+    resLocation.includes("/api/auth/error") ||
+    resLocation.includes("error=");
+
+  if (response.status >= 400 || isRedirectToError) {
     const body = await response.clone().text().catch(() => "");
     let parsed: Record<string, unknown> = {};
     try {
@@ -13,9 +19,11 @@ async function diagnosticHandler(req: Request) {
     console.error(
       "[AUTH_ERROR]",
       JSON.stringify({
-        path: new URL(req.url).pathname,
+        path: url.pathname,
         method: req.method,
         status: response.status,
+        location: resLocation || null,
+        errorParam: url.searchParams.get("error") || null,
         message: parsed.message || body.substring(0, 300),
         envPresent: {
           AUTH_SECRET: !!process.env.AUTH_SECRET,
